@@ -21,6 +21,7 @@
   --bg: #041424;
   --accent: #2dd4bf;
   --accent2: #fbbf24;
+  --gold: #fde047;
   --text: #f8fafc;
   --text-dim: #94a3b8;
   --sat: env(safe-area-inset-top, 0px);
@@ -28,138 +29,213 @@
   --sal: env(safe-area-inset-left, 0px);
   --sar: env(safe-area-inset-right, 0px);
   --font-main: "Zen Kaku Gothic New", -apple-system, BlinkMacSystemFont, "Hiragino Sans", sans-serif;
-  --font-round: "M PLUS Rounded 1c", sans-serif;
+  --font-round: "M PLUS Rounded 1c", "Hiragino Maru Gothic ProN", sans-serif;
 }
 * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
 html, body {
   width: 100%; height: 100%; height: 100dvh; overflow: hidden; overscroll-behavior: none;
-  background: linear-gradient(180deg, #072a47 0%, #041424 55%, #020912 100%); color: var(--text); font-family: var(--font-main);
+  background: radial-gradient(circle at 50% 20%, #093558 0%, #041424 55%, #020813 100%);
+  color: var(--text); font-family: var(--font-main);
   -webkit-user-select: none; user-select: none; -webkit-touch-callout: none;
 }
 #app {
-  position: relative; width: 100%; height: 100%; display: flex; flex-direction: column;
-  padding: calc(var(--sat) + 10px) calc(var(--sar) + 14px) calc(var(--sab) + 12px) calc(var(--sal) + 14px);
+  position: relative; width: 100%; height: 100%;
+  display: flex; align-items: center; justify-content: center;
+  padding: calc(var(--sat) + 4px) calc(var(--sar) + 4px) calc(var(--sab) + 4px) calc(var(--sal) + 4px);
+}
+
+/* 論理座標 400×780 ステージラッパー */
+#stage-wrap {
+  position: relative;
+  width: min(100%, calc((100dvh - var(--sat) - var(--sab) - 8px) * 400 / 780));
+  height: min(100%, calc((100vw - var(--sal) - var(--sar) - 8px) * 780 / 400));
+  aspect-ratio: 400 / 780;
+  max-width: 440px;
+  max-height: 860px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+#game-canvas {
+  width: 100%; height: 100%; display: block; touch-action: none;
+  border-radius: 20px;
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.7);
+}
+
+/* ステージ上の透明操作ボタン（DOMクリック・アクセシビリティ＆タッチ両対応） */
+.hud-hit-btn {
+  position: absolute;
+  background: transparent;
+  border: none;
+  color: transparent;
+  cursor: pointer;
+  outline: none;
+  touch-action: manipulation;
+  z-index: 6;
+  border-radius: 12px;
+}
+.hud-hit-btn:active {
+  background: rgba(45, 212, 191, 0.12);
+}
+
+/* オーバーレイ画面（タイトル・一時停止・リザルト） */
+.screen-overlay {
+  position: fixed; inset: 0; z-index: 40;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  padding: calc(var(--sat) + 10px) calc(var(--sar) + 14px) calc(var(--sab) + 10px) calc(var(--sal) + 14px);
+  background: rgba(3, 10, 22, 0.68);
+  -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px);
 }
 .top-bar {
-  display: flex; justify-content: space-between; align-items: center; gap: 8px; z-index: 20;
+  width: min(92vw, 376px);
+  display: flex; justify-content: space-between; align-items: center; gap: 8px;
+  margin-bottom: 10px; z-index: 45;
 }
 .bar-btn {
-  display: inline-flex; align-items: center; gap: 6px; padding: 8px 14px; border-radius: 999px;
-  background: rgba(15, 23, 42, 0.78); border: 1.5px solid rgba(255, 255, 255, 0.18);
-  color: #f8fafc; font-family: var(--font-round); font-size: 12.5px; font-weight: 800;
-  cursor: pointer; outline: none; box-shadow: 0 4px 12px rgba(0,0,0,0.35);
+  display: inline-flex; align-items: center; gap: 6px; padding: 8px 13px; border-radius: 999px;
+  background: rgba(15, 23, 42, 0.85); border: 1.5px solid rgba(255, 255, 255, 0.2);
+  color: #f8fafc; font-family: var(--font-round); font-size: 12px; font-weight: 800;
+  cursor: pointer; outline: none; box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+  touch-action: manipulation;
 }
 .bar-btn:active { transform: scale(0.96); }
 .bar-btn.pri { border-color: var(--accent); color: #fde047; }
 
-#game-canvas {
-  flex: 1; width: 100%; min-height: 0; display: block; touch-action: none;
-}
-
 .center-card {
-  width: min(92vw, 376px); margin: auto; background: rgba(17, 22, 37, 0.92);
-  border: 2px solid var(--accent); border-radius: 26px; padding: 22px 18px;
-  box-shadow: 0 18px 45px rgba(0,0,0,0.65); text-align: center; z-index: 15;
-  -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px);
+  width: min(92vw, 376px); background: rgba(11, 22, 38, 0.94);
+  border: 2px solid var(--accent); border-radius: 24px; padding: 18px 16px;
+  box-shadow: 0 18px 45px rgba(0,0,0,0.78); text-align: center;
 }
-.hero-icon { width: 72px; height: 72px; border-radius: 18px; margin: 0 auto 10px; display: block; box-shadow: 0 8px 20px rgba(0,0,0,0.45); }
+.hero-icon { width: 64px; height: 64px; border-radius: 16px; margin: 0 auto 8px; display: block; box-shadow: 0 8px 20px rgba(0,0,0,0.45); }
 .genre-badge {
-  display: inline-block; padding: 4px 12px; border-radius: 999px; font-size: 11px; font-weight: 900;
-  background: rgba(255,255,255,0.08); color: var(--accent2); border: 1px solid rgba(255,255,255,0.14);
-  margin-bottom: 6px;
+  display: inline-block; padding: 3px 11px; border-radius: 999px; font-size: 11px; font-weight: 900;
+  background: rgba(45,212,191,0.16); color: var(--accent); border: 1px solid rgba(45,212,191,0.4);
+  margin-bottom: 4px;
 }
 .game-title {
-  font-family: var(--font-round); font-size: 24px; font-weight: 900; line-height: 1.2; color: #fff;
+  font-family: var(--font-round); font-size: 22px; font-weight: 900; line-height: 1.2; color: #fff;
+  text-shadow: 0 2px 10px rgba(45,212,191,0.45);
 }
 .game-en {
-  font-size: 11px; font-weight: 800; letter-spacing: 1.5px; color: var(--text-dim); margin-bottom: 8px;
+  font-size: 10.5px; font-weight: 800; letter-spacing: 1.5px; color: var(--text-dim); margin-bottom: 6px;
 }
 .tagline {
-  font-size: 13px; font-weight: 800; color: #fde047; margin-bottom: 12px;
+  font-size: 12.5px; font-weight: 800; color: #fde047; margin-bottom: 10px;
 }
 .how-box {
-  text-align: left; font-size: 12.5px; line-height: 1.55; background: rgba(8, 11, 20, 0.72);
-  border: 1px solid rgba(255,255,255,0.1); border-radius: 16px; padding: 12px 14px; margin-bottom: 14px;
+  text-align: left; font-size: 12px; line-height: 1.5; background: rgba(5, 12, 24, 0.8);
+  border: 1px solid rgba(255,255,255,0.1); border-radius: 14px; padding: 10px 12px; margin-bottom: 12px;
   color: #cbd5e1;
 }
-.how-box li { list-style: none; padding-left: 1.2em; position: relative; margin-bottom: 4px; }
+.how-box li { list-style: none; padding-left: 1.2em; position: relative; margin-bottom: 3px; }
+.how-box li:last-child { margin-bottom: 0; }
 .how-box li::before {
   content: "✦"; position: absolute; left: 0; color: var(--accent); font-weight: 900;
 }
 .how-box b { color: #fff; font-weight: 900; }
 
 .best-strip {
-  display: flex; justify-content: space-around; gap: 6px; margin-bottom: 14px;
-  background: rgba(255,255,255,0.05); border-radius: 12px; padding: 8px 10px; font-size: 11.5px;
+  display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; margin-bottom: 12px;
+  background: rgba(255,255,255,0.05); border-radius: 12px; padding: 8px 6px; font-size: 11px; color: #cbd5e1;
 }
-.best-strip b { display: block; font-family: var(--font-round); font-size: 15px; color: #fde047; }
+.best-strip b { display: block; font-family: var(--font-round); font-size: 14px; color: #fde047; margin-top: 2px; }
 
 .btn-start {
-  width: 100%; padding: 14px 18px; border-radius: 16px; border: none;
-  background: linear-gradient(135deg, var(--accent), var(--accent2));
-  color: #fff; font-family: var(--font-round); font-size: 17px; font-weight: 900;
-  cursor: pointer; box-shadow: 0 6px 20px rgba(0,0,0,0.45); outline: none;
+  width: 100%; padding: 13px 18px; border-radius: 15px; border: none;
+  background: linear-gradient(135deg, #0d9488, #2dd4bf 50%, #fbbf24);
+  color: #041424; font-family: var(--font-round); font-size: 17px; font-weight: 900;
+  cursor: pointer; box-shadow: 0 6px 20px rgba(45,212,191,0.45); outline: none;
+  touch-action: manipulation;
 }
 .btn-start:active { transform: scale(0.97); }
-.plan-note {
-  margin-top: 10px; font-size: 11px; color: var(--text-dim); line-height: 1.45;
+
+/* リザルト数値グリッド */
+.res-score-box {
+  background: linear-gradient(135deg, rgba(13,148,136,0.35), rgba(15,23,42,0.9));
+  border: 1.5px solid rgba(45,212,191,0.5); border-radius: 16px;
+  padding: 12px 10px; margin: 10px 0;
+}
+.res-score-lbl { font-size: 11px; color: #cbd5e1; font-weight: 800; letter-spacing: 1px; }
+.res-score-val {
+  font-family: var(--font-round); font-size: 32px; font-weight: 900; color: #fde047;
+  line-height: 1.15; text-shadow: 0 3px 12px rgba(250,204,21,0.35);
+}
+.new-rec-badge {
+  display: inline-block; margin-top: 4px; padding: 2px 10px; border-radius: 999px;
+  background: linear-gradient(90deg, #0d9488, #f59e0b); color: #fff;
+  font-family: var(--font-round); font-size: 11px; font-weight: 900;
+  animation: pulseBadge 1s ease-in-out infinite alternate;
+}
+@keyframes pulseBadge { from { transform: scale(0.96); } to { transform: scale(1.06); } }
+
+.res-stats-grid {
+  display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; margin-bottom: 12px;
+}
+.res-stat-card {
+  background: rgba(6, 15, 28, 0.85); border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 12px; padding: 8px 4px; font-size: 11px; color: #94a3b8;
+}
+.res-stat-card b {
+  display: block; font-family: var(--font-round); font-size: 14px; color: #f8fafc; margin-top: 2px;
 }
 
 /* モーダル共通（アカウント・ランキング・端末チェック） */
 #auth-modal, #rank-modal, #gate-modal {
   position: fixed; inset: 0; z-index: 100; display: flex; align-items: center; justify-content: center;
-  background: rgba(6, 8, 16, 0.85); -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px);
+  background: rgba(4, 10, 20, 0.86); -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px);
   padding: calc(var(--sat) + 16px) 16px calc(var(--sab) + 16px); overflow-y: auto; touch-action: pan-y;
 }
 .hidden { display: none !important; }
 .modal-card {
-  width: min(92vw, 380px); margin: auto; background: #151928;
+  width: min(92vw, 380px); margin: auto; background: #0f1b2d;
   border: 1.5px solid var(--accent); border-radius: 22px;
-  padding: 22px 18px; box-shadow: 0 16px 40px rgba(0,0,0,0.8); text-align: center; color: #f8fafc;
+  padding: 20px 18px; box-shadow: 0 16px 40px rgba(0,0,0,0.85); text-align: center; color: #f8fafc;
 }
-.modal-logo { width: 60px; height: 60px; border-radius: 15px; margin: 0 auto 8px; display: block; }
+.modal-logo { width: 58px; height: 58px; border-radius: 15px; margin: 0 auto 8px; display: block; }
 .modal-card h2 { font-family: var(--font-round); font-size: 20px; font-weight: 900; margin-bottom: 4px; }
 .modal-card h3 { font-size: 15px; font-weight: 800; color: #fde047; margin-bottom: 8px; }
 .modal-card p.muted { font-size: 12px; line-height: 1.5; color: #94a3b8; margin: 6px 0 12px; text-align: left; }
 .tabs2 { display: flex; gap: 8px; margin: 12px 0; }
 .tabs2 button {
   flex: 1; padding: 10px 0; border-radius: 10px; border: 1px solid rgba(148,163,184,0.3);
-  background: rgba(10,12,20,0.8); color: #94a3b8; font-size: 13.5px; font-weight: 800; cursor: pointer;
+  background: rgba(8,14,24,0.85); color: #94a3b8; font-size: 13.5px; font-weight: 800; cursor: pointer;
 }
-.tabs2 button.on { border-color: var(--accent); color: #fff; background: rgba(255,255,255,0.12); }
+.tabs2 button.on { border-color: var(--accent); color: #fff; background: rgba(45,212,191,0.18); }
 .m-input {
-  width: 100%; padding: 12px 14px; border: 1.5px solid rgba(148,163,184,0.28);
-  border-radius: 10px; font-size: 15px; background: #0b0e17; color: #f8fafc; margin-bottom: 8px; outline: none;
+  width: 100%; padding: 11px 14px; border: 1.5px solid rgba(148,163,184,0.28);
+  border-radius: 10px; font-size: 15px; background: #07101c; color: #f8fafc; margin-bottom: 8px; outline: none;
 }
 .m-input:focus { border-color: var(--accent); }
 .m-btn {
-  width: 100%; min-height: 44px; padding: 10px 14px; border-radius: 10px;
-  border: 1px solid rgba(148,163,184,0.3); background: rgba(30,36,54,0.92); color: #e2e8f0;
-  font-size: 14px; font-weight: 800; margin-top: 8px; cursor: pointer; outline: none;
+  width: 100%; min-height: 44px; padding: 10px 14px; border-radius: 12px;
+  border: 1px solid rgba(148,163,184,0.3); background: rgba(20,34,54,0.92); color: #e2e8f0;
+  font-family: var(--font-round); font-size: 14px; font-weight: 800; margin-top: 8px; cursor: pointer; outline: none;
+  touch-action: manipulation;
 }
-.m-btn.pri { background: linear-gradient(135deg, var(--accent), var(--accent2)); color: #fff; border: none; }
+.m-btn:active { transform: scale(0.98); }
+.m-btn.pri { background: linear-gradient(135deg, var(--accent), var(--accent2)); color: #041424; border: none; font-weight: 900; }
 .m-btn.danger { background: #7f1d1d; border-color: #f87171; color: #fecaca; }
 .m-btn.sub { background: transparent; color: #cbd5e1; }
 
 .rank-box { max-height: 270px; overflow-y: auto; -webkit-overflow-scrolling: touch; margin: 12px 0; display: flex; flex-direction: column; gap: 6px; }
-.rank-row { display: flex; align-items: center; padding: 8px 10px; border-radius: 10px; background: rgba(10,12,20,0.75); border: 1px solid rgba(255,255,255,0.08); font-size: 12px; }
-.rank-row.me { border-color: var(--accent); background: rgba(255,255,255,0.12); }
+.rank-row { display: flex; align-items: center; padding: 8px 10px; border-radius: 10px; background: rgba(7,14,24,0.8); border: 1px solid rgba(255,255,255,0.08); font-size: 12px; }
+.rank-row.me { border-color: var(--accent); background: rgba(45,212,191,0.16); }
 .rank-pos { width: 30px; font-weight: 900; color: #fde047; text-align: left; }
 .rank-name { flex: 1; text-align: left; font-weight: 800; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .rank-score { font-family: var(--font-round); font-weight: 900; color: var(--accent2); margin-left: 8px; }
-.rank-sub { font-size: 10.5px; color: #94a3b8; margin-left: 6px; min-width: 44px; text-align: right; }
+.rank-sub { font-size: 10.5px; color: #94a3b8; margin-left: 6px; min-width: 54px; text-align: right; }
 
 #rotate-notice {
-  position: fixed; inset: 0; z-index: 300; background: #0b0e17; color: #fff;
+  position: fixed; inset: 0; z-index: 300; background: #041424; color: #fff;
   display: none; align-items: center; justify-content: center; flex-direction: column; gap: 10px; font-weight: 900;
 }
 @media (orientation: landscape) and (max-height: 520px) {
   #rotate-notice { display: flex; }
 }
 #toast {
-  position: fixed; top: calc(var(--sat) + 18px); left: 50%; transform: translateX(-50%); z-index: 250;
-  background: rgba(15,18,28,0.95); border: 1.5px solid var(--accent); padding: 9px 18px; border-radius: 999px;
-  color: #fff; font-size: 13px; font-weight: 800; box-shadow: 0 8px 24px rgba(0,0,0,0.6);
+  position: fixed; top: calc(var(--sat) + 14px); left: 50%; transform: translateX(-50%); z-index: 250;
+  background: rgba(10,18,32,0.96); border: 1.5px solid var(--accent); padding: 8px 16px; border-radius: 999px;
+  color: #fff; font-size: 12.5px; font-weight: 800; box-shadow: 0 8px 24px rgba(0,0,0,0.65);
   opacity: 0; pointer-events: none; transition: opacity .25s; white-space: nowrap;
 }
 #toast.show { opacity: 1; }
@@ -168,7 +244,29 @@ html, body {
 <body>
 <div id="rotate-notice">📱 縦向きにしてお楽しみください</div>
 
+<!-- iOS 18+ ハプティクス用隠しスイッチ -->
+<label id="haptic-label" style="position:fixed;left:-9999px;top:-9999px;opacity:0;pointer-events:none;" aria-hidden="true">
+  <input type="checkbox" switch id="haptic-input">
+</label>
+
 <div id="app">
+  <div id="stage-wrap">
+    <canvas id="game-canvas" width="400" height="780"></canvas>
+
+    <!-- 上部 HUD 操作ボタン領域（論理 400×780 に対応） -->
+    <button id="pause-btn" class="hud-hit-btn" style="left:2.5%;top:1%;width:10.5%;height:6.5%;" aria-label="一時停止" title="一時停止"></button>
+    <button id="snd-btn" class="hud-hit-btn" style="left:13.5%;top:1%;width:9.5%;height:6.5%;" aria-label="サウンド切替" title="サウンド切替"></button>
+    <button id="hud-rank-btn" class="hud-hit-btn" style="left:23.5%;top:1%;width:9.5%;height:6.5%;" aria-label="ランキング" title="ランキング"></button>
+
+    <!-- 下部 深海アクティブスキルボタン領域（論理 400×780 に対応） -->
+    <button id="skill-boost" class="hud-hit-btn" style="left:3.5%;top:88%;width:29.5%;height:10%;" aria-label="水流加速 JET BOOST (EN30)"></button>
+    <button id="skill-pulse" class="hud-hit-btn" style="left:35.2%;top:88%;width:29.5%;height:10%;" aria-label="電撃パルス SHOCK PULSE (EN40)"></button>
+    <button id="skill-magnet" class="hud-hit-btn" style="left:67%;top:88%;width:29.5%;height:10%;" aria-label="深海磁場 ABYSS MAGNET (EN50)"></button>
+  </div>
+</div>
+
+<!-- タイトル画面オーバーレイ -->
+<div class="screen-overlay" id="title-overlay">
   <div class="top-bar">
     <button id="me-btn" class="bar-btn">👤 <span id="user-display">ログイン</span></button>
     <button id="rank-btn" class="bar-btn pri">🏆 ランキング</button>
@@ -181,17 +279,53 @@ html, body {
     <div class="game-en">ABYSS HUNTER</div>
     <div class="tagline">1000mの深淵へ潜り、発光する深海魚と伝説の怪物を一網打尽！</div>
     <ul class="how-box">
-      <li><b>【潜航】</b>左右ドラッグで魚や機雷を避け、ルアーをできるだけ<b>深い海</b>へ沈めろ！</li>
-      <li><b>【巻上】</b>最深部に届いたら急上昇！今度は逆に<b>希少な深海魚や宝箱</b>を次々フック！</li>
-      <li><b>【空撃】</b>水面へ飛び出したら<b>タップ連打</b>！宙に舞う魚を撃ち抜いて報酬最大3倍！</li>
-      <li>稼いだGOLDで<b>糸の長さ・フック数・電撃シールド</b>を強化し、水深1000mの主を釣れ！</li>
+      <li><b>【潜航】</b>左右ドラッグで魚や機雷を避け、水流リングで<b>最深部</b>へダイブ！</li>
+      <li><b>【巻上】</b>最深部から急上昇！<b>発光深海魚・リュウグウノツカイ・宝箱</b>を一網打尽！</li>
+      <li><b>【空撃】</b>水面へ飛び出したら<b>タップ連打</b>！プラズマ砲乱射で報酬最大3倍！</li>
+      <li>稼いだGOLDで<b>水深上限・フック容量・電撃シールド</b>を強化し、1000mの主を討て！</li>
     </ul>
     <div class="best-strip">
       <div>最高スコア<b id="best-main">0 pts</b></div>
       <div>最深到達記録<b id="best-sub">100 m</b></div>
+      <div>深海主討伐<b id="best-boss">0 体</b></div>
     </div>
-    <button class="btn-start" id="start-btn">🚀 ゲーム開始（企画プレビュー）</button>
-    <p class="plan-note">※共通アカウント・D1記録API・自動デプロイ基盤セットアップ済み。<br>詳細は <code>PLAN.md</code> / <code>CLAUDE.md</code> を参照してください。</p>
+    <button class="btn-start" id="start-btn">🚀 ダイブ開始（全5キャスト）</button>
+  </div>
+</div>
+
+<!-- 一時停止モーダル -->
+<div class="screen-overlay hidden" id="pause-modal">
+  <div class="center-card">
+    <span class="genre-badge">PAUSED</span>
+    <h2 class="game-title" style="margin-bottom:4px;">一時停止中</h2>
+    <p style="font-size:12px;color:#94a3b8;margin-bottom:12px;">深海フィッシングを中断しています</p>
+    <button class="m-btn pri" id="resume-btn">▶️ ゲームを再開</button>
+    <button class="m-btn" id="retry-btn">🔄 はじめからやり直す</button>
+    <button class="m-btn" id="pause-rank-btn">🏆 ランキングを見る</button>
+    <button class="m-btn" id="pause-acct-btn">👤 アカウント設定</button>
+    <button class="m-btn sub" id="title-btn">🏠 タイトルへ戻る</button>
+  </div>
+</div>
+
+<!-- リザルト（ゲーム終了）モーダル -->
+<div class="screen-overlay hidden" id="result-modal">
+  <div class="center-card">
+    <span class="genre-badge" id="res-badge">HUNTING COMPLETE</span>
+    <h2 class="game-title" id="res-title">深海釣行完了！</h2>
+    <div class="res-score-box">
+      <div class="res-score-lbl">FINAL SCORE</div>
+      <div class="res-score-val" id="res-score">0 pts</div>
+      <div id="res-new-record" class="new-rec-badge hidden">✨ NEW RECORD! ✨</div>
+    </div>
+    <div class="res-stats-grid">
+      <div class="res-stat-card">最深到達水深<b id="res-depth">150 m</b></div>
+      <div class="res-stat-card">総釣果数<b id="res-catch">0 匹</b></div>
+      <div class="res-stat-card">深海主討伐<b id="res-boss">0 体</b></div>
+    </div>
+    <div id="res-summary-line" style="font-size:12.5px;color:#fde047;font-weight:800;margin-bottom:10px;">最大到達：水深 150m</div>
+    <button class="btn-start" id="result-retry-btn">🔄 もう一度潜る</button>
+    <button class="m-btn" id="result-rank-btn" style="margin-top:8px;">🏆 ランキングを見る</button>
+    <button class="m-btn sub" id="result-title-btn">🏠 タイトルへ戻る</button>
   </div>
 </div>
 
@@ -228,10 +362,20 @@ html, body {
 (() => {
   'use strict';
 
+  /* ================= エラー監視（バグ検証用） ================= */
+  const errorLog = [];
+  window.addEventListener('error', (e) => {
+    errorLog.push(String(e.message || e));
+  });
+  window.addEventListener('unhandledrejection', (e) => {
+    errorLog.push(String(e.reason || e));
+  });
+
   /* ================= 共通アカウント・クラウド同期・端末チェック ================= */
   const API_BASE = '';
   const LS_ACCT_KEY = 'ah_account_v1';
   const LS_REC_KEY = 'ah_record_v1';
+  const LS_SND_KEY = 'ah_sound_v1';
   const GATE_KEY = 'ah_gate_ok_v1';
   const PBKDF2_ITER = 600000;
   const KEY_SALT_PREFIX = 'minicity-v1:';
@@ -247,6 +391,8 @@ html, body {
 
   let acct = { token: '', name: '' };
   let localRec = { best_score: 0, best_depth: 100, best_catch: 0, boss_caught: 0 };
+  let lastCloudPostAt = 0;
+
   try {
     const a = JSON.parse(localStorage.getItem(LS_ACCT_KEY) || 'null');
     if (a && typeof a.token === 'string') acct = Object.assign(acct, a);
@@ -266,33 +412,255 @@ html, body {
     t._tm = setTimeout(() => t.classList.remove('show'), 2500);
   }
 
-  /* ================= WebAudio 音の解錠 & iOS 18+ 触覚フィードバック ================= */
-  const Snd = {
-    ctx: null,
-    unlock() {
-      if (!this.ctx) {
-        const AC = window.AudioContext || window.webkitAudioContext;
-        if (!AC) return;
-        this.ctx = new AC();
-      }
-      if (this.ctx.state === 'suspended') this.ctx.resume();
-    },
-    beep(freq = 660, dur = 0.08) {
-      if (!this.ctx) return;
-      const t = this.ctx.currentTime;
-      const o = this.ctx.createOscillator();
-      const g = this.ctx.createGain();
-      o.type = 'triangle';
-      o.frequency.setValueAtTime(freq, t);
-      g.gain.setValueAtTime(0.18, t);
-      g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
-      o.connect(g); g.connect(this.ctx.destination);
-      o.start(t); o.stop(t + dur + 0.02);
+  /* ================= iOS 18+ 触覚フィードバック ================= */
+  const Haptics = {
+    lastAt: 0,
+    pulse() {
+      const now = performance.now();
+      if (now - this.lastAt < 50) return;
+      this.lastAt = now;
+      try {
+        if (navigator.vibrate) navigator.vibrate(12);
+        const lbl = $('haptic-label');
+        if (lbl) lbl.click();
+      } catch (e) {}
     }
   };
-  window.addEventListener('pointerup', () => Snd.unlock(), { passive: true });
-  window.addEventListener('touchend', () => Snd.unlock(), { passive: true });
 
+  /* ================= WebAudio プロシージャルBGM & 効果音 ================= */
+  const SCALE_NOTES = [261.63, 293.66, 329.63, 392.00, 440.00, 523.25, 587.33, 659.25, 783.99, 880.00, 1046.50, 1174.66, 1318.51];
+
+  const Snd = {
+    ctx: null,
+    on: true,
+    bgmTimer: null,
+    bgmStep: 0,
+    noiseBuf: null,
+
+    init() {
+      try {
+        const saved = localStorage.getItem(LS_SND_KEY);
+        if (saved === '0') this.on = false;
+      } catch (e) {}
+    },
+
+    unlock() {
+      try {
+        if (!this.ctx) {
+          const AC = window.AudioContext || window.webkitAudioContext;
+          if (!AC) return;
+          this.ctx = new AC();
+          const sr = this.ctx.sampleRate;
+          const buf = this.ctx.createBuffer(1, sr * 1.0, sr);
+          const data = buf.getChannelData(0);
+          for (let i = 0; i < data.length; i++) data[i] = Math.random() * 2 - 1;
+          this.noiseBuf = buf;
+        }
+        if (this.ctx.state === 'suspended') this.ctx.resume();
+      } catch (e) {}
+    },
+
+    toggle() {
+      this.on = !this.on;
+      try { localStorage.setItem(LS_SND_KEY, this.on ? '1' : '0'); } catch (e) {}
+      if (this.on) {
+        this.unlock();
+        this.beep(660, 0.08);
+        if (G.mode === 'playing') this.startBgm();
+      } else {
+        this.stopBgm();
+      }
+      toast(this.on ? '🔊 サウンド ON' : '🔇 サウンド OFF');
+    },
+
+    beep(freq = 660, dur = 0.08) {
+      if (!this.on || !this.ctx) return;
+      try {
+        const t = this.ctx.currentTime;
+        const o = this.ctx.createOscillator();
+        const g = this.ctx.createGain();
+        o.type = 'triangle';
+        o.frequency.setValueAtTime(freq, t);
+        g.gain.setValueAtTime(0.14, t);
+        g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+        o.connect(g); g.connect(this.ctx.destination);
+        o.start(t); o.stop(t + dur + 0.02);
+      } catch (e) {}
+    },
+
+    splash() {
+      if (!this.on || !this.ctx) return;
+      try {
+        const t = this.ctx.currentTime;
+        if (this.noiseBuf) {
+          const src = this.ctx.createBufferSource();
+          src.buffer = this.noiseBuf;
+          const filter = this.ctx.createBiquadFilter();
+          filter.type = 'bandpass';
+          filter.frequency.setValueAtTime(600, t);
+          filter.frequency.exponentialRampToValueAtTime(180, t + 0.35);
+          filter.Q.value = 1.8;
+          const g = this.ctx.createGain();
+          g.gain.setValueAtTime(0.24, t);
+          g.gain.exponentialRampToValueAtTime(0.001, t + 0.38);
+          src.connect(filter); filter.connect(g); g.connect(this.ctx.destination);
+          src.start(t); src.stop(t + 0.4);
+        }
+      } catch (e) {}
+    },
+
+    boostRing() {
+      if (!this.on || !this.ctx) return;
+      try {
+        const t = this.ctx.currentTime;
+        [440, 587.33, 880, 1174.66].forEach((f, i) => {
+          const o = this.ctx.createOscillator();
+          const g = this.ctx.createGain();
+          o.type = 'sine';
+          o.frequency.setValueAtTime(f, t + i * 0.04);
+          g.gain.setValueAtTime(0.13, t + i * 0.04);
+          g.gain.exponentialRampToValueAtTime(0.001, t + i * 0.04 + 0.16);
+          o.connect(g); g.connect(this.ctx.destination);
+          o.start(t + i * 0.04); o.stop(t + i * 0.04 + 0.18);
+        });
+      } catch (e) {}
+    },
+
+    hookFish(tier = 1, count = 1) {
+      if (!this.on || !this.ctx) return;
+      try {
+        const t = this.ctx.currentTime;
+        const idx = Math.min(SCALE_NOTES.length - 1, Math.max(0, (tier - 1) + Math.min(4, Math.floor(count / 3))));
+        const f = SCALE_NOTES[idx];
+        const o = this.ctx.createOscillator();
+        const g = this.ctx.createGain();
+        o.type = 'triangle';
+        o.frequency.setValueAtTime(f * 0.85, t);
+        o.frequency.exponentialRampToValueAtTime(f * 1.4, t + 0.075);
+        g.gain.setValueAtTime(0.16, t);
+        g.gain.exponentialRampToValueAtTime(0.001, t + 0.11);
+        o.connect(g); g.connect(this.ctx.destination);
+        o.start(t); o.stop(t + 0.12);
+      } catch (e) {}
+    },
+
+    mineZap(shielded = true) {
+      if (!this.on || !this.ctx) return;
+      try {
+        const t = this.ctx.currentTime;
+        const o = this.ctx.createOscillator();
+        const g = this.ctx.createGain();
+        o.type = 'sawtooth';
+        if (shielded) {
+          o.frequency.setValueAtTime(320, t);
+          o.frequency.exponentialRampToValueAtTime(920, t + 0.14);
+        } else {
+          o.frequency.setValueAtTime(220, t);
+          o.frequency.exponentialRampToValueAtTime(75, t + 0.25);
+        }
+        g.gain.setValueAtTime(0.18, t);
+        g.gain.exponentialRampToValueAtTime(0.001, t + 0.26);
+        o.connect(g); g.connect(this.ctx.destination);
+        o.start(t); o.stop(t + 0.28);
+      } catch (e) {}
+    },
+
+    laser(combo = 1) {
+      if (!this.on || !this.ctx) return;
+      try {
+        const t = this.ctx.currentTime;
+        const base = 780 + Math.min(600, combo * 45);
+        const o = this.ctx.createOscillator();
+        const g = this.ctx.createGain();
+        o.type = 'square';
+        o.frequency.setValueAtTime(base, t);
+        o.frequency.exponentialRampToValueAtTime(190, t + 0.09);
+        g.gain.setValueAtTime(0.11, t);
+        g.gain.exponentialRampToValueAtTime(0.001, t + 0.095);
+        o.connect(g); g.connect(this.ctx.destination);
+        o.start(t); o.stop(t + 0.1);
+      } catch (e) {}
+    },
+
+    perfectFanfare() {
+      if (!this.on || !this.ctx) return;
+      try {
+        const t = this.ctx.currentTime;
+        const chords = [
+          { notes: [392.00, 493.88, 587.33, 783.99], d: 0.0, len: 0.22 },
+          { notes: [440.00, 554.37, 659.25, 880.00], d: 0.16, len: 0.22 },
+          { notes: [523.25, 659.25, 783.99, 1046.50], d: 0.32, len: 0.55 }
+        ];
+        for (const c of chords) {
+          for (const n of c.notes) {
+            const o = this.ctx.createOscillator();
+            const g = this.ctx.createGain();
+            o.type = 'triangle';
+            o.frequency.setValueAtTime(n, t + c.d);
+            g.gain.setValueAtTime(0.09, t + c.d);
+            g.gain.exponentialRampToValueAtTime(0.0008, t + c.d + c.len);
+            o.connect(g); g.connect(this.ctx.destination);
+            o.start(t + c.d); o.stop(t + c.d + c.len + 0.02);
+          }
+        }
+      } catch (e) {}
+    },
+
+    upgrade() {
+      if (!this.on || !this.ctx) return;
+      try {
+        const t = this.ctx.currentTime;
+        [523.25, 659.25, 783.99, 1046.50].forEach((f, i) => {
+          const o = this.ctx.createOscillator();
+          const g = this.ctx.createGain();
+          o.type = 'triangle';
+          o.frequency.setValueAtTime(f, t + i * 0.045);
+          g.gain.setValueAtTime(0.13, t + i * 0.045);
+          g.gain.exponentialRampToValueAtTime(0.001, t + i * 0.045 + 0.16);
+          o.connect(g); g.connect(this.ctx.destination);
+          o.start(t + i * 0.045); o.stop(t + i * 0.045 + 0.18);
+        });
+      } catch (e) {}
+    },
+
+    startBgm() {
+      this.stopBgm();
+      if (!this.on) return;
+      const diveNotes = [196.00, 220.00, 261.63, 293.66, 329.63, 293.66, 261.63, 220.00];
+      const reelNotes = [329.63, 392.00, 440.00, 523.25, 587.33, 523.25, 659.25, 783.99];
+      this.bgmTimer = setInterval(() => {
+        if (!this.on || !this.ctx || this.ctx.state !== 'running' || G.mode !== 'playing') return;
+        try {
+          const t = this.ctx.currentTime;
+          const seq = (G.phase === 'reel' || G.phase === 'sky') ? reelNotes : diveNotes;
+          const f = seq[this.bgmStep % seq.length];
+          this.bgmStep++;
+          const o = this.ctx.createOscillator();
+          const g = this.ctx.createGain();
+          o.type = G.phase === 'sky' ? 'triangle' : 'sine';
+          o.frequency.setValueAtTime(f, t);
+          g.gain.setValueAtTime(0.025, t);
+          g.gain.exponentialRampToValueAtTime(0.0005, t + 0.28);
+          o.connect(g); g.connect(this.ctx.destination);
+          o.start(t); o.stop(t + 0.3);
+        } catch (e) {}
+      }, 320);
+    },
+
+    stopBgm() {
+      if (this.bgmTimer) {
+        clearInterval(this.bgmTimer);
+        this.bgmTimer = null;
+      }
+    }
+  };
+
+  Snd.init();
+  ['pointerup', 'touchend', 'click'].forEach((ev) => {
+    window.addEventListener(ev, () => Snd.unlock(), { passive: true });
+  });
+
+  /* ================= アカウント・ランキング通信 ================= */
   async function deriveKey(name, password) {
     if (!(window.crypto && crypto.subtle)) {
       throw { message: 'この環境では暗号機能が使えません。https:// または localhost で開いてください' };
@@ -340,9 +708,10 @@ html, body {
   }
 
   function updateUI() {
-    $('user-display').textContent = acct.name || 'ログイン';
-    $('best-main').textContent = Number(localRec.best_score || 0).toLocaleString() + ' pts';
-    $('best-sub').textContent = Number(localRec.best_depth || 100).toLocaleString() + ' m';
+    if ($('user-display')) $('user-display').textContent = acct.name || 'ログイン';
+    if ($('best-main')) $('best-main').textContent = Number(localRec.best_score || 0).toLocaleString() + ' pts';
+    if ($('best-sub')) $('best-sub').textContent = Number(localRec.best_depth || 100).toLocaleString() + ' m';
+    if ($('best-boss')) $('best-boss').textContent = Number(localRec.boss_caught || 0).toLocaleString() + ' 体';
   }
 
   async function loadCloudRecords() {
@@ -358,6 +727,36 @@ html, body {
         updateUI();
       }
     } catch (e) {}
+  }
+
+  async function submitCloudRecord(score, depth, catchCount, boss) {
+    const payload = {
+      score: Math.max(0, Math.min(99999999, Math.floor(Number(score) || 0))),
+      depth: Math.max(0, Math.min(9999, Math.floor(Number(depth) || 100))),
+      catchCount: Math.max(0, Math.min(999, Math.floor(Number(catchCount) || 0))),
+      boss: Math.max(0, Math.min(999, Math.floor(Number(boss) || 0)))
+    };
+
+    localRec.best_score = Math.max(localRec.best_score || 0, payload.score);
+    localRec.best_depth = Math.max(localRec.best_depth || 100, payload.depth);
+    localRec.best_catch = Math.max(localRec.best_catch || 0, payload.catchCount);
+    localRec.boss_caught = Math.max(localRec.boss_caught || 0, payload.boss);
+    saveLocalRec();
+    updateUI();
+
+    if (!acct.token) return { skipped: true, payload };
+    const now = Date.now();
+    const waitMs = Math.max(0, 3100 - (now - lastCloudPostAt));
+    if (waitMs > 0) {
+      await new Promise((r) => setTimeout(r, waitMs));
+    }
+    lastCloudPostAt = Date.now();
+    try {
+      const res = await api('POST', '/api/records', payload, { keepalive: true });
+      return { ok: true, payload, res };
+    } catch (e) {
+      return { ok: false, error: e, payload };
+    }
   }
 
   function showAuthModal(html) {
@@ -383,9 +782,9 @@ html, body {
       ${reg ? '<input id="in-pass2" class="m-input" type="password" placeholder="パスワード（確認用）" autocomplete="new-password" maxlength="128">' : ''}
       ${reg ? '<input id="in-invite" class="m-input" placeholder="招待コード" autocomplete="off" autocapitalize="none" autocorrect="off" spellcheck="false" maxlength="64">' : ''}
       <p class="muted" id="auth-msg" style="color:#ff9a90;min-height:16px">${msg ? esc(msg) : ''}</p>
-      <p class="muted">※たかGamesポータルや他のゲーム（SUGAR STACK、DEAD BRIDGE、ルーンの砦、ゆびさきパニック等）と同じアカウントでログインできます。</p>
+      <p class="muted">※たかGamesポータルや他のゲーム（ポーション・アルケミスト、SUGAR STACK、DEAD BRIDGE等）と同じアカウントでログインできます。</p>
       <button class="m-btn pri" id="auth-submit">${reg ? '登録してはじめる' : 'ログイン'}</button>
-      ${acct.token ? '<button class="m-btn sub" id="auth-cancel">閉じる</button>' : ''}
+      <button class="m-btn sub" id="auth-cancel">閉じる</button>
     `);
     $('tab-login').onclick = () => showAuth('login', '', $('in-name')?.value);
     $('tab-reg').onclick = () => showAuth('register', '', $('in-name')?.value);
@@ -511,6 +910,13 @@ html, body {
     modal.classList.remove('hidden');
     listEl.innerHTML = '<div style="color:#94a3b8;font-size:12px;padding:16px 0;">読み込み中…</div>';
     myEl.textContent = '';
+    if (!acct.token) {
+      listEl.innerHTML = `<div style="color:#cbd5e1;font-size:12px;padding:16px 8px;line-height:1.6;">
+        あなたの端末ベスト: <b style="color:#fde047">${Number(localRec.best_score || 0).toLocaleString()} pts</b>（水深 ${localRec.best_depth || 100}m）<br>
+        <span style="color:#94a3b8;font-size:11px;">ログインすると全国のアビスハンターとハイスコアを競えます！</span>
+      </div>`;
+      return;
+    }
     try {
       const r = await api('GET', '/api/ranking');
       if (!r || !r.ranking || r.ranking.length === 0) {
@@ -521,12 +927,12 @@ html, body {
             <div class="rank-pos">#${idx + 1}</div>
             <div class="rank-name">${esc(row.name)}${row.me ? ' (あなた)' : ''}</div>
             <div class="rank-score">${Number(row.bestScore).toLocaleString()} pts</div>
-            <div class="rank-sub">${row.subStat} m</div>
+            <div class="rank-sub">${row.subStat || 100}m / 👑${row.extraStat || 0}</div>
           </div>
         `).join('');
       }
       if (r && r.me && r.me.rank) {
-        myEl.textContent = `あなたの順位: #${r.me.rank} （${Number(r.me.bestScore).toLocaleString()} pts）`;
+        myEl.textContent = `あなたの順位: #${r.me.rank} （${Number(r.me.bestScore).toLocaleString()} pts / 水深${r.me.subStat}m）`;
       }
     } catch (e) {
       listEl.innerHTML = '<div style="color:#f87171;font-size:12px;padding:16px 0;">ランキング取得に失敗しました</div>';
@@ -547,26 +953,2347 @@ html, body {
     return !deviceOk();
   }
 
+  /* ================= ゲーム本編仕様：深海生物・装備・アップグレード定義 ================= */
+  const LW = 400;
+  const LH = 780;
+  const PLAY_LEFT = 22;
+  const PLAY_RIGHT = 368;
+  const VIEW_TOP = 110;
+  const VIEW_BOTTOM = 676;
+  const LURE_SCREEN_Y_DIVE = 250;
+  const LURE_SCREEN_Y_REEL = 470;
+  const PIXELS_PER_METER = 10; // 1m = 10px
+
+  // アップグレード段階テーブル（水深上限・フック容量・電撃シールド）
+  const DEPTH_LEVELS = [0, 150, 300, 500, 750, 1000];
+  const DEPTH_COSTS  = [0, 220, 520, 1150, 2300, 0];
+
+  const HOOK_LEVELS  = [0, 6, 9, 12, 16, 20];
+  const HOOK_COSTS   = [0, 170, 400, 880, 1750, 0];
+
+  const SHIELD_LEVELS = [0, 1, 2, 3, 4, 5];
+  const SHIELD_COSTS  = [0, 170, 400, 880, 1750, 0];
+
+  // 深海魚＆秘宝カタログ（深層ほど高単価・発光）
+  const FISH_SPECIES = [
+    {
+      id: 'sardine', tier: 1, name: 'ネオンイワシ',
+      minD: 12, maxD: 260, gold: 18, score: 80, r: 14, spd: 42,
+      color: '#38bdf8', glow: '#7dd3fc', accent: '#e0f2fe', skyHp: 1
+    },
+    {
+      id: 'jelly', tier: 2, name: 'ルミナスクラゲ',
+      minD: 35, maxD: 380, gold: 30, score: 140, r: 16, spd: 28,
+      color: '#e879f9', glow: '#f5d0fe', accent: '#fae8ff', skyHp: 1
+    },
+    {
+      id: 'angler', tier: 3, name: 'チョウチンアンコウ',
+      minD: 130, maxD: 540, gold: 52, score: 250, r: 19, spd: 36,
+      color: '#fb923c', glow: '#fde047', accent: '#fef08a', skyHp: 1
+    },
+    {
+      id: 'mendako', tier: 4, name: '発光メンダコ',
+      minD: 190, maxD: 680, gold: 78, score: 380, r: 17, spd: 32,
+      color: '#f43f5e', glow: '#fda4af', accent: '#ffe4e6', skyHp: 1
+    },
+    {
+      id: 'isopod', tier: 5, name: 'ダイオウグソクムシ',
+      minD: 290, maxD: 840, gold: 115, score: 560, r: 21, spd: 30,
+      color: '#cbd5e1', glow: '#38bdf8', accent: '#f8fafc', skyHp: 1
+    },
+    {
+      id: 'chest', tier: 6, name: '黄金の沈没船宝箱',
+      minD: 240, maxD: 980, gold: 175, score: 900, r: 20, spd: 10,
+      color: '#facc15', glow: '#fef08a', accent: '#ffffff', skyHp: 1, isTreasure: true
+    },
+    {
+      id: 'oarfish', tier: 7, name: 'リュウグウノツカイ',
+      minD: 450, maxD: 1000, gold: 230, score: 1300, r: 24, spd: 48,
+      color: '#2dd4bf', glow: '#f43f5e', accent: '#ccfbf1', skyHp: 1
+    },
+    {
+      id: 'kraken', tier: 8, name: 'ダイオウイカ・ルミナス',
+      minD: 520, maxD: 1000, gold: 320, score: 1900, r: 26, spd: 44,
+      color: '#a855f7', glow: '#d8b4fe', accent: '#faf5ff', skyHp: 2, isMidBoss: true
+    },
+    {
+      id: 'relic', tier: 9, name: '古代アビス秘宝',
+      minD: 680, maxD: 1000, gold: 440, score: 2600, r: 21, spd: 14,
+      color: '#22d3ee', glow: '#fde047', accent: '#ffffff', skyHp: 1, isTreasure: true
+    },
+    {
+      id: 'leviathan', tier: 10, name: '深海主アビス・リヴァイアサン',
+      minD: 940, maxD: 1000, gold: 1500, score: 12000, r: 44, spd: 32,
+      color: '#f43f5e', glow: '#2dd4bf', accent: '#fde047', skyHp: 5, isBoss: true
+    }
+  ];
+
+  function makeRng(seed = 20261011) {
+    let s = (seed >>> 0) || 1;
+    return () => {
+      s = (s * 1664525 + 1013904223) >>> 0;
+      return s / 4294967296;
+    };
+  }
+
+  /* ================= Canvas 初期化 ================= */
+  const canvas = $('game-canvas');
+  const ctx = canvas.getContext('2d');
+  let dpr = 1;
+
+  function resizeCanvas() {
+    dpr = Math.min(window.devicePixelRatio || 1, 3);
+    const w = Math.round(LW * dpr);
+    const h = Math.round(LH * dpr);
+    if (canvas.width !== w || canvas.height !== h) {
+      canvas.width = w;
+      canvas.height = h;
+    }
+  }
+  window.addEventListener('resize', resizeCanvas);
+  resizeCanvas();
+
+  function clampX(x) {
+    if (!Number.isFinite(x)) return (PLAY_LEFT + PLAY_RIGHT) * 0.5;
+    return Math.max(PLAY_LEFT + 14, Math.min(PLAY_RIGHT - 14, x));
+  }
+
+  /* ================= ゲーム状態生成＆キャスト初期化 ================= */
+  function createGameState(seed = Date.now()) {
+    const rng = makeRng(seed);
+    const st = {
+      rng,
+      mode: 'title', // 'title' | 'playing' | 'paused' | 'gameover'
+      phase: 'dive', // 'dive' | 'reel' | 'sky' | 'shop'
+      cast: 1,
+      maxCasts: 5,
+      extraCastGranted: false,
+
+      score: 0,
+      gold: 0,
+      totalGoldEarned: 0,
+      maxDepthReached: 100,
+      totalCaught: 0,
+      bestCastCatch: 0,
+      bossCaught: 0,
+      perfectHunts: 0,
+
+      // アップグレード段階 (Lv1〜Lv5)
+      depthLv: 1,
+      hookLv: 1,
+      shieldLv: 1,
+
+      // 現在のキャスト状態
+      depth: 0,
+      depthLimit: DEPTH_LEVELS[1],
+      hookCap: HOOK_LEVELS[1],
+      shield: SHIELD_LEVELS[1],
+      maxShield: SHIELD_LEVELS[1],
+      energy: 45,
+      maxEnergy: 100,
+
+      lureX: 195,
+      targetX: 195,
+      lureVx: 0,
+      isDragging: false,
+      activePointerId: null,
+
+      invulnTimer: 0,
+      boostTimer: 0,
+      magnetTimer: 0,
+      pulseVisualTimer: 0,
+      stunTimer: 0,
+      shakeTimer: 0,
+      flashTimer: 0,
+      flashColor: '#2dd4bf',
+      bannerText: '',
+      bannerSub: '',
+      bannerColor: '#fde047',
+      bannerTimer: 0,
+      shopTimer: 0,
+
+      // 配列（フェーズ遷移ごとに確実にリセット・管理）
+      fishes: [],
+      mines: [],
+      rings: [],
+      hooked: [],
+      skyTargets: [],
+      lasers: [],
+      particles: [],
+      popups: [],
+      bgBubbles: [],
+
+      // SKY BURST 状態
+      skyTimer: 0,
+      skyDuration: 3.6,
+      skyShots: 0,
+      skyHits: 0,
+      skyCombo: 0,
+      skyPerfect: false,
+      skyCastScore: 0,
+      skyCastGold: 0,
+      skyCelebTimer: 0,
+
+      time: 0,
+      castTime: 0,
+      nextId: 1,
+      skillsUsed: { boost: 0, pulse: 0, magnet: 0 },
+      upgradesBought: { depth: 0, hook: 0, shield: 0 },
+      endReason: ''
+    };
+
+    for (let i = 0; i < 24; i++) {
+      st.bgBubbles.push({
+        x: PLAY_LEFT + st.rng() * (PLAY_RIGHT - PLAY_LEFT),
+        y: VIEW_TOP + st.rng() * (VIEW_BOTTOM - VIEW_TOP),
+        r: 1.5 + st.rng() * 3,
+        spd: 18 + st.rng() * 30,
+        alpha: 0.15 + st.rng() * 0.35
+      });
+    }
+    return st;
+  }
+
+  let G = createGameState(20261011);
+
+  function showBanner(st, text, sub = '', color = '#fde047', dur = 1.5) {
+    if (st.headless) return;
+    st.bannerText = text;
+    st.bannerSub = sub;
+    st.bannerColor = color;
+    st.bannerTimer = dur;
+  }
+
+  function spawnParticles(st, x, y, color, count = 12, speed = 150, size = 3.5) {
+    if (st.headless) return;
+    for (let i = 0; i < count; i++) {
+      const ang = (Math.PI * 2 * i) / count + (st.rng() - 0.5) * 0.4;
+      const spd = speed * (0.4 + st.rng() * 0.75);
+      st.particles.push({
+        x,
+        y,
+        vx: Math.cos(ang) * spd,
+        vy: Math.sin(ang) * spd,
+        r: size * (0.65 + st.rng() * 0.65),
+        color,
+        life: 0.4 + st.rng() * 0.35,
+        maxLife: 0.75
+      });
+    }
+  }
+
+  function spawnPopup(st, x, y, text, subText = '', color = '#fde047', scale = 1.0) {
+    if (st.headless) return;
+    st.popups.push({
+      x: Math.max(58, Math.min(LW - 58, x)),
+      y: Math.max(125, Math.min(VIEW_BOTTOM - 24, y)),
+      vy: -46,
+      text,
+      subText,
+      color,
+      scale,
+      life: 0.9,
+      maxLife: 0.9
+    });
+  }
+
+  /* ================= キャスト生成（海中の魚・機雷・水流リング配置） ================= */
+  function setupCastEntities(st) {
+    // 配列を完全初期化（リセット漏れ防止）
+    st.fishes = [];
+    st.mines = [];
+    st.rings = [];
+    st.hooked = [];
+    st.skyTargets = [];
+    st.lasers = [];
+    st.particles = [];
+    st.popups = [];
+
+    st.depthLimit = DEPTH_LEVELS[st.depthLv];
+    st.hookCap = HOOK_LEVELS[st.hookLv];
+    st.maxShield = SHIELD_LEVELS[st.shieldLv];
+    st.shield = st.maxShield;
+    st.depth = 0;
+    st.castTime = 0;
+    st.shopTimer = 0;
+    st.invulnTimer = 0.5;
+    st.boostTimer = 0;
+    st.magnetTimer = 0;
+    st.pulseVisualTimer = 0;
+    st.stunTimer = 0;
+    st.energy = Math.min(st.maxEnergy, Math.max(40, st.energy + 25));
+
+    const maxD = st.depthLimit;
+
+    // 1. 水流ブーストリング配置（約45m間隔）
+    for (let d = 38; d < maxD - 35; d += 44 + st.rng() * 18) {
+      st.rings.push({
+        id: st.nextId++,
+        x: PLAY_LEFT + 44 + st.rng() * (PLAY_RIGHT - PLAY_LEFT - 88),
+        depth: d,
+        r: 22,
+        used: false
+      });
+    }
+
+    // 2. 深海機雷配置（水深24m以降、水流リングと重ならない位置に配置）
+    const mineStep = Math.max(15, 23 - st.depthLv * 1.3);
+    for (let d = 24; d < maxD - 20; d += mineStep + st.rng() * 8) {
+      let mx = PLAY_LEFT + 28 + st.rng() * (PLAY_RIGHT - PLAY_LEFT - 56);
+      const nearRing = st.rings.find((rg) => Math.abs(rg.depth - d) < 12 && Math.abs(rg.x - mx) < 48);
+      if (nearRing) {
+        mx = nearRing.x > 195 ? nearRing.x - 75 : nearRing.x + 75;
+        mx = clampX(mx);
+      }
+      st.mines.push({
+        id: st.nextId++,
+        x: mx,
+        baseX: mx,
+        depth: d,
+        r: 14,
+        phase: st.rng() * Math.PI * 2,
+        patrolAmp: d > 250 ? (15 + st.rng() * 26) : 0,
+        patrolSpd: 1.2 + st.rng() * 1.1,
+        alive: true
+      });
+    }
+
+    // 3. 深海魚＆宝箱の配置（約5.2mごとに1〜2匹、深層ほど高単価）
+    for (let d = 10; d <= maxD; d += 5.2) {
+      const countAtDepth = (d > maxD * 0.72 && st.rng() < 0.45) ? 2 : 1;
+      for (let c = 0; c < countAtDepth; c++) {
+        const candidates = FISH_SPECIES.filter((sp) => !sp.isBoss && d >= sp.minD && d <= sp.maxD);
+        if (candidates.length === 0) continue;
+
+        let totalW = 0;
+        const weights = candidates.map((sp) => {
+          const w = sp.isTreasure ? 0.42 : (0.7 + sp.tier * 0.38);
+          totalW += w;
+          return w;
+        });
+        let pick = st.rng() * totalW;
+        let chosen = candidates[0];
+        for (let i = 0; i < candidates.length; i++) {
+          pick -= weights[i];
+          if (pick <= 0) { chosen = candidates[i]; break; }
+        }
+
+        const fx = PLAY_LEFT + 26 + st.rng() * (PLAY_RIGHT - PLAY_LEFT - 52);
+        const fd = Math.min(maxD - 2, d + (st.rng() - 0.5) * 3.5);
+        st.fishes.push({
+          id: st.nextId++,
+          spec: chosen,
+          x: fx,
+          depth: fd,
+          vx: (st.rng() < 0.5 ? -1 : 1) * chosen.spd * (0.75 + st.rng() * 0.5),
+          r: chosen.r,
+          stunned: 0,
+          caught: false,
+          phase: st.rng() * Math.PI * 2
+        });
+      }
+    }
+
+    // 4. 水深1000m解放時は最深部に「深海主アビス・リヴァイアサン」が必ず降臨！
+    if (maxD >= 1000) {
+      const bossSpec = FISH_SPECIES.find((sp) => sp.id === 'leviathan');
+      st.fishes.push({
+        id: st.nextId++,
+        spec: bossSpec,
+        x: (PLAY_LEFT + PLAY_RIGHT) * 0.5,
+        depth: 992,
+        vx: 35,
+        r: bossSpec.r,
+        stunned: 0,
+        caught: false,
+        phase: 0
+      });
+    }
+  }
+
+  function startCast(st) {
+    st.phase = 'dive';
+    setupCastEntities(st);
+    if (!st.headless) {
+      Snd.splash();
+      const sub = st.depthLimit >= 1000 ? '水深1000mの深海主リヴァイアサンを釣れ！' : `目標水深 ${st.depthLimit}m へ潜航開始！`;
+      showBanner(st, `⚓ CAST ${st.cast}/${st.maxCasts} DIVE!`, sub, '#2dd4bf', 1.5);
+    }
+  }
+
+  function seedTitleDemo(st) {
+    st.depthLv = 3;
+    st.hookLv = 2;
+    st.shieldLv = 2;
+    setupCastEntities(st);
+    st.depth = 220;
+  }
+  seedTitleDemo(G);
+
+  /* ================= フェーズ遷移（DIVE → REEL → SKY BURST → SHOP → NEXT/RESULT） ================= */
+  function startReelPhase(st, reasonText = '最深部到達！一網打尽REEL UP!') {
+    if (st.phase !== 'dive') return;
+    st.phase = 'reel';
+    st.boostTimer = Math.min(st.boostTimer, 0.4);
+    st.invulnTimer = Math.max(st.invulnTimer, 0.6);
+
+    // 1000m深淵層（920m以上）に到達していた場合、深海主リヴァイアサンがルアーへ喰らいついて確実にボスバトル発生！
+    if (st.depth >= 920) {
+      const boss = st.fishes.find((f) => !f.caught && f.spec.isBoss);
+      if (boss) {
+        st.maxDepthReached = 1000;
+        hookSingleFish(st, boss, true);
+      }
+    }
+
+    if (!st.headless) {
+      Snd.boostRing();
+      Haptics.pulse();
+      showBanner(st, '🪝 REEL UP! 一網打尽！', reasonText, '#fde047', 1.4);
+    }
+  }
+
+  function hookSingleFish(st, f, forceHook = false) {
+    if (f.caught) return false;
+
+    if (st.hooked.length >= st.hookCap && !forceHook) {
+      let minIdx = -1;
+      let minGold = f.spec.gold;
+      for (let i = 0; i < st.hooked.length; i++) {
+        if (!st.hooked[i].spec.isBoss && st.hooked[i].spec.gold < minGold) {
+          minGold = st.hooked[i].spec.gold;
+          minIdx = i;
+        }
+      }
+      if (minIdx === -1) return false;
+      st.hooked.splice(minIdx, 1);
+    }
+
+    f.caught = true;
+    st.hooked.push(f);
+    st.energy = Math.min(st.maxEnergy, st.energy + (f.spec.isBoss ? 25 : 3.2));
+
+    if (!st.headless) {
+      Snd.hookFish(f.spec.tier, st.hooked.length);
+      if (f.spec.tier >= 5) Haptics.pulse();
+      const label = f.spec.isBoss ? '👑 深海主 HIT!!' : `🪝 ${f.spec.name}`;
+      spawnPopup(st, st.lureX, LURE_SCREEN_Y_REEL - 18, label, `+${f.spec.gold}G`, f.spec.glow, f.spec.isBoss ? 1.35 : 1.0);
+    }
+    return true;
+  }
+
+  function startSkyBurstPhase(st) {
+    if (st.phase !== 'reel') return;
+    st.phase = 'sky';
+    st.lasers = [];
+
+    if (st.hooked.length === 0) {
+      for (let i = 0; i < 2; i++) {
+        st.hooked.push({
+          id: st.nextId++,
+          spec: FISH_SPECIES[0],
+          r: FISH_SPECIES[0].r
+        });
+      }
+    }
+
+    const hasBoss = st.hooked.some((h) => h.spec.isBoss);
+    st.skyDuration = hasBoss ? 4.5 : 3.6;
+    st.skyTimer = st.skyDuration;
+    st.skyCelebTimer = 0;
+    st.skyShots = 0;
+    st.skyHits = 0;
+    st.skyCombo = 0;
+    st.skyPerfect = false;
+    st.skyCastScore = 0;
+    st.skyCastGold = 0;
+
+    const count = st.hooked.length;
+    st.skyTargets = st.hooked.map((h, idx) => {
+      const isBoss = !!h.spec.isBoss;
+      const col = idx % 4;
+      const row = Math.floor(idx / 4);
+      const totalRows = Math.max(1, Math.ceil(count / 4));
+      const baseX = isBoss ? 195 : (62 + col * 84 + (row % 2) * 16 + (st.rng() - 0.5) * 18);
+      const baseY = isBoss ? 225 : (175 + (row / totalRows) * 270 + (st.rng() - 0.5) * 18);
+      const hp = isBoss ? 5 : (h.spec.skyHp || 1);
+      return {
+        id: h.id,
+        spec: h.spec,
+        x: Math.max(48, Math.min(345, baseX)),
+        y: Math.max(145, Math.min(485, baseY)),
+        vx: (st.rng() - 0.5) * 22,
+        vy: -14 + st.rng() * 12,
+        r: isBoss ? 44 : Math.max(18, h.spec.r + 3),
+        hp,
+        maxHp: hp,
+        blasted: false,
+        angle: (st.rng() - 0.5) * 0.6,
+        va: (st.rng() - 0.5) * 1.8
+      };
+    });
+
+    if (!st.headless) {
+      Snd.splash();
+      Haptics.pulse();
+      const msg = hasBoss ? '🚨 深海主を空中で撃ち抜け！！' : 'タップ連打でプラズマ砲乱射！報酬最大3倍！';
+      showBanner(st, '⚡ SKY BURST!! 空中乱射!', msg, '#f43f5e', 1.4);
+    }
+  }
+
+  function fireSkyLaser(st, tapX, tapY) {
+    if (st.phase !== 'sky' || st.mode !== 'playing') return false;
+    const alive = st.skyTargets.filter((t) => !t.blasted);
+    if (alive.length === 0) return false;
+
+    st.skyShots++;
+    const beams = 1 + st.shieldLv;
+    const tx = Number.isFinite(tapX) ? tapX : 195;
+    const ty = Number.isFinite(tapY) ? tapY : 300;
+
+    const sorted = alive.slice().sort((a, b) => {
+      const da = Math.hypot(a.x - tx, a.y - ty) - (a.spec.isBoss ? 35 : 0);
+      const db = Math.hypot(b.x - tx, b.y - ty) - (b.spec.isBoss ? 35 : 0);
+      return da - db;
+    });
+
+    for (let b = 0; b < beams; b++) {
+      const target = sorted[b % sorted.length];
+      if (!target || target.blasted) continue;
+
+      st.skyHits++;
+      st.skyCombo++;
+      target.hp--;
+
+      if (!st.headless) {
+        st.lasers.push({
+          x0: 195 + (b - (beams - 1) * 0.5) * 14,
+          y0: 590,
+          x1: target.x + (st.rng() - 0.5) * 10,
+          y1: target.y + (st.rng() - 0.5) * 10,
+          color: target.spec.isBoss ? '#f43f5e' : '#2dd4bf',
+          life: 0.18,
+          maxLife: 0.18
+        });
+      }
+
+      if (target.hp <= 0) {
+        target.blasted = true;
+        const mult = Math.min(1.6, 1.15 + st.skyCombo * 0.03);
+        const addGold = Math.round(target.spec.gold * mult);
+        const addScore = Math.round(target.spec.score * mult);
+        st.skyCastGold += addGold;
+        st.skyCastScore += addScore;
+
+        if (target.spec.isBoss) {
+          st.bossCaught++;
+          if (!st.headless) {
+            Snd.perfectFanfare();
+            Haptics.pulse();
+            st.flashTimer = 0.65;
+            st.flashColor = '#fde047';
+            spawnParticles(st, target.x, target.y, '#fde047', 40, 240, 5);
+            spawnPopup(st, target.x, target.y, `👑 深海主討伐!! +${addGold}G`, `+${addScore.toLocaleString()} pts`, '#fde047', 1.4);
+          }
+        } else if (!st.headless) {
+          spawnParticles(st, target.x, target.y, target.spec.glow, 12, 150, 3.5);
+          spawnPopup(st, target.x, target.y, `+${addGold}G`, `×${mult.toFixed(1)} HIT!`, target.spec.glow, 1.05);
+        }
+      } else if (!st.headless) {
+        spawnParticles(st, target.x, target.y, '#f43f5e', 8, 110, 3);
+        spawnPopup(st, target.x, target.y, `CORE HIT!`, `残りHP ${target.hp}`, '#fda4af', 1.0);
+      }
+    }
+
+    if (!st.headless) {
+      Snd.laser(st.skyCombo);
+      Haptics.pulse();
+    }
+
+    // 全個体撃ち抜き完了で PERFECT HUNT! 発動
+    if (st.skyTargets.every((t) => t.blasted) && !st.skyPerfect) {
+      st.skyPerfect = true;
+      st.perfectHunts++;
+      st.skyCelebTimer = 1.35;
+      if (!st.headless) {
+        Snd.perfectFanfare();
+        st.flashTimer = 0.45;
+        st.flashColor = '#2dd4bf';
+        showBanner(st, '🎯 PERFECT HUNT!! ×1.5!', '全個体ロックオン撃破ボーナス発動！', '#fde047', 1.3);
+      }
+    }
+    return true;
+  }
+
+  function finishSkyBurstPhase(st) {
+    if (st.phase !== 'sky') return;
+
+    for (const t of st.skyTargets) {
+      if (!t.blasted) {
+        st.skyCastGold += t.spec.gold;
+        st.skyCastScore += t.spec.score;
+      }
+    }
+
+    const perfMult = st.skyPerfect ? 1.35 : 1.0;
+    const finalGold = Math.round(st.skyCastGold * perfMult);
+    const finalScore = Math.round(st.skyCastScore * perfMult) + Math.round(st.depth * 2);
+
+    st.gold += finalGold;
+    st.totalGoldEarned += finalGold;
+    st.score += finalScore;
+
+    const castCaughtCount = st.hooked.length;
+    st.totalCaught += castCaughtCount;
+    if (castCaughtCount > st.bestCastCatch) st.bestCastCatch = castCaughtCount;
+
+    const canUnlock1000mNow = (st.depthLv === 4 && st.gold >= DEPTH_COSTS[4] && !st.extraCastGranted);
+    if (st.cast >= st.maxCasts && !canUnlock1000mNow) {
+      st.endReason = st.bossCaught > 0 ? 'boss_slain_clear' : 'completed_all_casts';
+      onGameOver(st);
+      return;
+    }
+
+    st.phase = 'shop';
+    st.shopTimer = 0;
+    if (!st.headless) {
+      showBanner(st, `💰 +${finalGold.toLocaleString()} GOLD 獲得!`, '装備をアップグレードして次のキャストへ！', '#fde047', 1.4);
+    }
+  }
+
+  /* ================= ショップ購入＆次キャスト進行 ================= */
+  function buyUpgrade(st, type) {
+    if (st.mode !== 'playing' || st.phase !== 'shop') return false;
+
+    if (type === 'depth') {
+      if (st.depthLv >= 5) return false;
+      const cost = DEPTH_COSTS[st.depthLv];
+      if (st.gold < cost) return false;
+      st.gold -= cost;
+      st.depthLv++;
+      st.depthLimit = DEPTH_LEVELS[st.depthLv];
+      st.upgradesBought.depth++;
+
+      if (st.depthLv === 5 && st.cast >= st.maxCasts && !st.extraCastGranted) {
+        st.extraCastGranted = true;
+        st.maxCasts = st.cast + 1;
+        if (!st.headless) toast('🚨 水深1000m解放！最終延長「EXTRA BOSS CAST」発動！');
+      }
+
+      if (!st.headless) {
+        Snd.upgrade();
+        Haptics.pulse();
+      }
+      return true;
+    }
+
+    if (type === 'hook') {
+      if (st.hookLv >= 5) return false;
+      const cost = HOOK_COSTS[st.hookLv];
+      if (st.gold < cost) return false;
+      st.gold -= cost;
+      st.hookLv++;
+      st.hookCap = HOOK_LEVELS[st.hookLv];
+      st.upgradesBought.hook++;
+      if (!st.headless) {
+        Snd.upgrade();
+        Haptics.pulse();
+      }
+      return true;
+    }
+
+    if (type === 'shield') {
+      if (st.shieldLv >= 5) return false;
+      const cost = SHIELD_COSTS[st.shieldLv];
+      if (st.gold < cost) return false;
+      st.gold -= cost;
+      st.shieldLv++;
+      st.maxShield = SHIELD_LEVELS[st.shieldLv];
+      st.shield = st.maxShield;
+      st.upgradesBought.shield++;
+      if (!st.headless) {
+        Snd.upgrade();
+        Haptics.pulse();
+      }
+      return true;
+    }
+
+    return false;
+  }
+
+  function proceedNextCast(st) {
+    if (st.mode !== 'playing' || st.phase !== 'shop') return false;
+    if (st.cast >= st.maxCasts) {
+      st.endReason = st.bossCaught > 0 ? 'boss_slain_clear' : 'completed_all_casts';
+      onGameOver(st);
+      return true;
+    }
+    st.cast++;
+    startCast(st);
+    return true;
+  }
+
+  /* ================= アクティブスキル（水流加速・電撃パルス・深海磁場） ================= */
+  function useSkill(st, type) {
+    if (st.mode !== 'playing') return false;
+
+    if (st.phase === 'shop') {
+      if (type === 'boost') return buyUpgrade(st, 'depth');
+      if (type === 'pulse') return buyUpgrade(st, 'hook');
+      if (type === 'magnet') return buyUpgrade(st, 'shield');
+      return false;
+    }
+
+    // 1. 🌊 水流加速 (JET BOOST - EN 30)
+    if (type === 'boost') {
+      if (st.energy < 30 || st.boostTimer > 0.2) return false;
+      st.energy -= 30;
+      st.skillsUsed.boost++;
+      if (st.phase === 'sky') {
+        st.skyTimer = Math.min(st.skyDuration + 1.2, st.skyTimer + 0.9);
+        fireSkyLaser(st, 195, 280);
+      } else {
+        st.boostTimer = 1.45;
+        st.invulnTimer = Math.max(st.invulnTimer, 1.45);
+      }
+      if (!st.headless) {
+        Snd.boostRing();
+        Haptics.pulse();
+        spawnPopup(st, st.lureX, st.phase === 'dive' ? LURE_SCREEN_Y_DIVE : LURE_SCREEN_Y_REEL, '🌊 水流ジェット加速!', '無敵高速ストリーム！', '#38bdf8', 1.15);
+      }
+      return true;
+    }
+
+    // 2. ⚡ 電撃パルス (SHOCK PULSE - EN 40)
+    if (type === 'pulse') {
+      if (st.energy < 40 || st.pulseVisualTimer > 0.1) return false;
+      st.energy -= 40;
+      st.skillsUsed.pulse++;
+      st.pulseVisualTimer = 0.75;
+      st.invulnTimer = Math.max(st.invulnTimer, 1.1);
+
+      if (st.phase === 'sky') {
+        for (const t of st.skyTargets) {
+          if (!t.blasted) fireSkyLaser(st, t.x, t.y);
+        }
+      } else {
+        let cleared = 0;
+        for (const m of st.mines) {
+          if (m.alive && Math.abs(m.depth - st.depth) < 42) {
+            m.alive = false;
+            cleared++;
+            st.score += 120;
+            st.gold += 15;
+          }
+        }
+        for (const f of st.fishes) {
+          if (!f.caught && Math.abs(f.depth - st.depth) < 45) {
+            f.stunned = 3.0;
+          }
+        }
+        if (st.shield < st.maxShield + 1) st.shield++;
+        if (!st.headless) {
+          Snd.mineZap(true);
+          Haptics.pulse();
+          const sub = cleared > 0 ? `機雷${cleared}個爆破 & シールド+1!` : '周囲の深海魚を感電スタン & シールド+1!';
+          spawnPopup(st, st.lureX, st.phase === 'dive' ? LURE_SCREEN_Y_DIVE : LURE_SCREEN_Y_REEL, '⚡ 電撃パルス!!', sub, '#fde047', 1.2);
+        }
+      }
+      return true;
+    }
+
+    // 3. 🧲 深海磁場 (ABYSS MAGNET - EN 50)
+    if (type === 'magnet') {
+      if (st.energy < 50 || st.magnetTimer > 0.2) return false;
+      st.energy -= 50;
+      st.skillsUsed.magnet++;
+      if (st.phase === 'sky') {
+        for (let i = 0; i < 3; i++) fireSkyLaser(st, 195, 260);
+      } else {
+        st.magnetTimer = 4.5;
+      }
+      if (!st.headless) {
+        Snd.upgrade();
+        Haptics.pulse();
+        spawnPopup(st, st.lureX, st.phase === 'dive' ? LURE_SCREEN_Y_DIVE : LURE_SCREEN_Y_REEL, '🧲 深海磁場フィールド!', 'レア魚＆宝箱を強力吸引！', '#e879f9', 1.18);
+      }
+      return true;
+    }
+
+    return false;
+  }
+
+  /* ================= メイン物理・ゲーム進行ステップ（dtクランプ保証） ================= */
+  function stepGame(st, rawDt) {
+    const dt = Math.min(Math.max(0, Number(rawDt) || 0), 1 / 30);
+    if (dt <= 0) return;
+
+    st.time += dt;
+    if (st.flashTimer > 0) st.flashTimer = Math.max(0, st.flashTimer - dt);
+    if (st.bannerTimer > 0) st.bannerTimer = Math.max(0, st.bannerTimer - dt);
+    if (st.shakeTimer > 0) st.shakeTimer = Math.max(0, st.shakeTimer - dt);
+    if (st.pulseVisualTimer > 0) st.pulseVisualTimer = Math.max(0, st.pulseVisualTimer - dt);
+
+    if (!st.headless) {
+      for (const b of st.bgBubbles) {
+        b.y -= b.spd * dt;
+        if (b.y < VIEW_TOP) {
+          b.y = VIEW_BOTTOM;
+          b.x = PLAY_LEFT + st.rng() * (PLAY_RIGHT - PLAY_LEFT);
+        }
+      }
+      for (let i = st.particles.length - 1; i >= 0; i--) {
+        const p = st.particles[i];
+        p.life -= dt;
+        if (p.life <= 0) { st.particles.splice(i, 1); continue; }
+        p.x += p.vx * dt;
+        p.y += p.vy * dt;
+      }
+      for (let i = st.popups.length - 1; i >= 0; i--) {
+        const p = st.popups[i];
+        p.life -= dt;
+        if (p.life <= 0) { st.popups.splice(i, 1); continue; }
+        p.y += p.vy * dt;
+      }
+      for (let i = st.lasers.length - 1; i >= 0; i--) {
+        st.lasers[i].life -= dt;
+        if (st.lasers[i].life <= 0) st.lasers.splice(i, 1);
+      }
+    }
+
+    if (st.mode === 'title') {
+      for (const f of st.fishes) {
+        f.x += f.vx * dt;
+        if (f.x < PLAY_LEFT + f.r) { f.x = PLAY_LEFT + f.r; f.vx = Math.abs(f.vx); }
+        if (f.x > PLAY_RIGHT - f.r) { f.x = PLAY_RIGHT - f.r; f.vx = -Math.abs(f.vx); }
+      }
+      return;
+    }
+
+    if (st.mode !== 'playing') return;
+
+    st.castTime += dt;
+    if (st.invulnTimer > 0) st.invulnTimer = Math.max(0, st.invulnTimer - dt);
+    if (st.boostTimer > 0) st.boostTimer = Math.max(0, st.boostTimer - dt);
+    if (st.magnetTimer > 0) st.magnetTimer = Math.max(0, st.magnetTimer - dt);
+    if (st.stunTimer > 0) st.stunTimer = Math.max(0, st.stunTimer - dt);
+
+    const dxTarget = clampX(st.targetX) - st.lureX;
+    st.lureVx = dxTarget * 14;
+    st.lureX = clampX(st.lureX + st.lureVx * dt);
+
+    st.energy = Math.min(st.maxEnergy, st.energy + 3.6 * dt);
+
+    if (st.phase === 'shop') {
+      st.shopTimer += dt;
+      return;
+    }
+
+    // ===== Phase 1 & 2: DIVE（潜航） / REEL（巻上） =====
+    if (st.phase === 'dive' || st.phase === 'reel') {
+      // 1プレイ（5キャスト）が約2.5〜3.5分に収まる心地よい潜航・巻上スピード
+      const baseDiveSpd = 12 + (st.depthLimit / 150) * 4.5;
+      const baseReelSpd = 13 + (st.depthLimit / 150) * 4.8;
+
+      if (st.phase === 'dive') {
+        const mult = st.boostTimer > 0 ? 2.15 : 1.0;
+        st.depth += baseDiveSpd * mult * dt;
+        if (st.depth > st.maxDepthReached) {
+          st.maxDepthReached = Math.min(1000, Math.floor(st.depth));
+        }
+      } else {
+        const mult = st.boostTimer > 0 ? 1.75 : (st.stunTimer > 0 ? 0.55 : 1.0);
+        st.depth -= baseReelSpd * mult * dt;
+      }
+
+      const lureScreenY = st.phase === 'dive' ? LURE_SCREEN_Y_DIVE : LURE_SCREEN_Y_REEL;
+
+      // 1. 水流ブーストリング判定（DIVE中）
+      if (st.phase === 'dive') {
+        for (const rg of st.rings) {
+          if (rg.used) continue;
+          const ry = lureScreenY + (rg.depth - st.depth) * PIXELS_PER_METER;
+          if (Math.abs(ry - lureScreenY) < 40) {
+            if (st.magnetTimer > 0) {
+              rg.x += (st.lureX - rg.x) * 6 * dt;
+            }
+            const dist = Math.hypot(rg.x - st.lureX, ry - lureScreenY);
+            if (dist < rg.r + 18) {
+              rg.used = true;
+              st.boostTimer = Math.max(st.boostTimer, 1.15);
+              st.invulnTimer = Math.max(st.invulnTimer, 1.15);
+              st.energy = Math.min(st.maxEnergy, st.energy + 15);
+              st.score += 200;
+              if (!st.headless) {
+                Snd.boostRing();
+                Haptics.pulse();
+                spawnParticles(st, st.lureX, lureScreenY, '#38bdf8', 14, 170, 3.5);
+                spawnPopup(st, st.lureX, lureScreenY - 12, '🌊 STREAM BOOST!', '+200 pts / 高速潜航!', '#38bdf8', 1.1);
+              }
+            }
+          }
+        }
+      }
+
+      // 2. 深海機雷の移動＆接触判定
+      for (const m of st.mines) {
+        if (!m.alive) continue;
+        if (m.patrolAmp > 0) {
+          m.x = clampX(m.baseX + Math.sin(st.time * m.patrolSpd + m.phase) * m.patrolAmp);
+        }
+        const my = lureScreenY + (m.depth - st.depth) * PIXELS_PER_METER;
+        if (Math.abs(my - lureScreenY) > 48) continue;
+
+        if (st.magnetTimer > 0) {
+          const pushDir = m.x >= st.lureX ? 1 : -1;
+          m.x = clampX(m.x + pushDir * 95 * dt);
+        }
+
+        const dist = Math.hypot(m.x - st.lureX, my - lureScreenY);
+        if (dist < m.r + 12) {
+          m.alive = false;
+          if (st.boostTimer > 0 || st.invulnTimer > 0) {
+            st.score += 100;
+            if (!st.headless) {
+              Snd.mineZap(true);
+              spawnParticles(st, m.x, my, '#38bdf8', 10, 140, 3);
+            }
+          } else if (st.shield > 0) {
+            st.shield--;
+            st.invulnTimer = 0.85;
+            st.score += 120;
+            if (!st.headless) {
+              Snd.mineZap(true);
+              Haptics.pulse();
+              spawnParticles(st, m.x, my, '#2dd4bf', 14, 160, 4);
+              spawnPopup(st, st.lureX, lureScreenY, '🛡️ シールド防御!', `機雷撃破 +120 (残${st.shield})`, '#2dd4bf', 1.05);
+            }
+          } else {
+            st.invulnTimer = 1.1;
+            st.shakeTimer = 0.35;
+            if (!st.headless) {
+              Snd.mineZap(false);
+              Haptics.pulse();
+              st.flashTimer = 0.3;
+              st.flashColor = '#ef4444';
+              spawnParticles(st, m.x, my, '#ef4444', 18, 190, 4.5);
+            }
+            if (st.phase === 'dive') {
+              if (st.depth < 40) st.depth = 40;
+              startReelPhase(st, `⚡ 機雷接触！水深${Math.floor(st.depth)}mから巻上開始！`);
+              break;
+            } else {
+              st.stunTimer = 0.55;
+              spawnPopup(st, st.lureX, lureScreenY, '⚡ 電撃ショック!', '巻上スピード一時低下', '#f87171', 1.05);
+            }
+          }
+        }
+      }
+
+      // 3. 深海魚・宝箱・ボスの移動＆接触判定
+      for (const f of st.fishes) {
+        if (f.caught) continue;
+
+        if (f.stunned > 0) {
+          f.stunned = Math.max(0, f.stunned - dt);
+        } else {
+          f.x += f.vx * dt;
+          if (f.x < PLAY_LEFT + f.r) { f.x = PLAY_LEFT + f.r; f.vx = Math.abs(f.vx); }
+          if (f.x > PLAY_RIGHT - f.r) { f.x = PLAY_RIGHT - f.r; f.vx = -Math.abs(f.vx); }
+        }
+
+        const fy = lureScreenY + (f.depth - st.depth) * PIXELS_PER_METER;
+        if (Math.abs(fy - lureScreenY) > 130) continue;
+
+        if (st.phase === 'reel') {
+          const pullRadius = st.magnetTimer > 0 ? 155 : (st.boostTimer > 0 ? 85 : 44);
+          const distToLure = Math.hypot(f.x - st.lureX, fy - lureScreenY);
+          if (distToLure < pullRadius) {
+            const pullStrength = st.magnetTimer > 0 ? 9.5 : 4.5;
+            f.x += (st.lureX - f.x) * pullStrength * dt;
+            f.depth += (st.depth - f.depth) * pullStrength * dt;
+          }
+        }
+
+        const fyNow = lureScreenY + (f.depth - st.depth) * PIXELS_PER_METER;
+        const hitDist = Math.hypot(f.x - st.lureX, fyNow - lureScreenY);
+        const catchRadius = st.phase === 'reel' ? (f.r + 18) : (f.r + 8);
+
+        if (hitDist < catchRadius) {
+          if (st.phase === 'dive') {
+            if (f.spec.isBoss) {
+              st.maxDepthReached = 1000;
+              hookSingleFish(st, f, true);
+              startReelPhase(st, `👑 深海主 ${f.spec.name} をヒット！`);
+              break;
+            }
+            if (st.boostTimer > 0 || st.invulnTimer > 0) {
+              continue;
+            }
+            if (st.shield > 0) {
+              st.shield--;
+              st.invulnTimer = 0.7;
+              f.vx = (f.x >= st.lureX ? 1 : -1) * 140;
+              if (!st.headless) {
+                Snd.beep(520, 0.06);
+                spawnPopup(st, st.lureX, lureScreenY, '⚡ ガード突破!', `深層へ潜航継続 (残${st.shield})`, '#38bdf8', 0.95);
+              }
+              continue;
+            }
+            hookSingleFish(st, f, true);
+            startReelPhase(st, `水深${Math.floor(st.depth)}mでヒット！巻上開始！`);
+            break;
+          } else {
+            hookSingleFish(st, f, f.spec.isBoss);
+          }
+        }
+      }
+
+      // 4. 最深部到達 or 水面帰還チェック
+      if (st.phase === 'dive' && st.depth >= st.depthLimit) {
+        st.depth = st.depthLimit;
+        if (st.depth > st.maxDepthReached) st.maxDepthReached = Math.floor(st.depth);
+        startReelPhase(st, `最深部 ${st.depthLimit}m 到達！一網打尽REEL UP!`);
+      } else if (st.phase === 'reel' && st.depth <= 0) {
+        st.depth = 0;
+        startSkyBurstPhase(st);
+      }
+    }
+    // ===== Phase 3: SKY BURST（水面ジャンプ＆空中乱射フィーバー） =====
+    else if (st.phase === 'sky') {
+      for (const t of st.skyTargets) {
+        if (t.blasted) continue;
+        t.x += t.vx * dt;
+        t.y += t.vy * dt;
+        t.vy += 12 * dt;
+        t.angle += t.va * dt;
+        if (t.x < 45) { t.x = 45; t.vx = Math.abs(t.vx); }
+        if (t.x > 350) { t.x = 350; t.vx = -Math.abs(t.vx); }
+        if (t.y < 140) { t.y = 140; t.vy = Math.abs(t.vy); }
+        if (t.y > 495) { t.y = 495; t.vy = -Math.abs(t.vy) * 0.6; }
+      }
+
+      if (st.skyCelebTimer > 0) {
+        st.skyCelebTimer -= dt;
+        if (st.skyCelebTimer <= 0) {
+          finishSkyBurstPhase(st);
+        }
+      } else {
+        st.skyTimer -= dt;
+        if (st.skyTimer <= 0) {
+          finishSkyBurstPhase(st);
+        }
+      }
+    }
+  }
+
+  /* ================= Canvas 描画ユーティリティ ================= */
+  function roundRectPath(c, x, y, w, h, r) {
+    const rr = Math.min(r, w * 0.5, h * 0.5);
+    c.beginPath();
+    c.moveTo(x + rr, y);
+    c.arcTo(x + w, y, x + w, y + h, rr);
+    c.arcTo(x + w, y + h, x, y + h, rr);
+    c.arcTo(x, y + h, x, y, rr);
+    c.arcTo(x, y, x + w, y, rr);
+    c.closePath();
+  }
+
+  function drawFishEntity(c, x, y, r, spec, dir = 1, time = 0, isHooked = false) {
+    c.save();
+    c.translate(x, y);
+    if (dir < 0) c.scale(-1, 1);
+
+    const wag = Math.sin(time * 9 + x * 0.05) * 0.14;
+    c.rotate(wag);
+
+    // 発光オーラ
+    const grad = c.createRadialGradient(0, 0, r * 0.2, 0, 0, r * 1.45);
+    grad.addColorStop(0, spec.glow + '55');
+    grad.addColorStop(1, 'rgba(0,0,0,0)');
+    c.fillStyle = grad;
+    c.beginPath();
+    c.arc(0, 0, r * 1.45, 0, Math.PI * 2);
+    c.fill();
+
+    if (spec.isTreasure) {
+      // 黄金の宝箱 / アビス秘宝
+      roundRectPath(c, -r * 0.85, -r * 0.65, r * 1.7, r * 1.3, 5);
+      c.fillStyle = spec.id === 'relic' ? '#0891b2' : '#b45309';
+      c.fill();
+      c.lineWidth = 2;
+      c.strokeStyle = spec.color;
+      c.stroke();
+
+      c.fillStyle = spec.glow;
+      c.fillRect(-r * 0.8, -2, r * 1.6, 4);
+      c.beginPath();
+      c.arc(0, 0, r * 0.28, 0, Math.PI * 2);
+      c.fillStyle = '#ffffff';
+      c.fill();
+    } else if (spec.isBoss) {
+      // 深海主 アビス・リヴァイアサン（巨大発光海竜）
+      c.fillStyle = '#881337';
+      c.strokeStyle = '#2dd4bf';
+      c.lineWidth = 2.5;
+      c.beginPath();
+      c.ellipse(0, 0, r * 1.25, r * 0.62, 0, 0, Math.PI * 2);
+      c.fill();
+      c.stroke();
+
+      // 背ビレ＆発光コア
+      c.fillStyle = '#f43f5e';
+      c.beginPath();
+      c.moveTo(-r * 0.6, -r * 0.55);
+      c.lineTo(0, -r * 1.05);
+      c.lineTo(r * 0.5, -r * 0.5);
+      c.closePath();
+      c.fill();
+
+      // 3つのアビス発光コア
+      [-0.5, 0, 0.45].forEach((ox) => {
+        c.beginPath();
+        c.arc(r * ox, 0, r * 0.16, 0, Math.PI * 2);
+        c.fillStyle = '#fde047';
+        c.fill();
+      });
+
+      // 咆哮する顎と眼光
+      c.beginPath();
+      c.arc(r * 0.78, -r * 0.16, r * 0.16, 0, Math.PI * 2);
+      c.fillStyle = '#2dd4bf';
+      c.fill();
+    } else if (spec.id === 'jelly' || spec.id === 'mendako') {
+      // クラゲ・メンダコドーム型
+      c.fillStyle = spec.color;
+      c.beginPath();
+      c.arc(0, -r * 0.1, r * 0.78, Math.PI, 0, false);
+      c.quadraticCurveTo(r * 0.8, r * 0.45, 0, r * 0.35);
+      c.quadraticCurveTo(-r * 0.8, r * 0.45, -r * 0.78, -r * 0.1);
+      c.fill();
+      c.lineWidth = 1.5;
+      c.strokeStyle = spec.glow;
+      c.stroke();
+
+      // 触手
+      c.strokeStyle = spec.accent;
+      c.lineWidth = 1.6;
+      for (let i = -2; i <= 2; i++) {
+        c.beginPath();
+        c.moveTo(i * r * 0.24, r * 0.3);
+        c.lineTo(i * r * 0.28 - Math.sin(time * 8 + i) * 3, r * 0.82);
+        c.stroke();
+      }
+      // 目
+      c.fillStyle = '#0f172a';
+      c.beginPath();
+      c.arc(r * 0.25, -r * 0.08, 2.5, 0, Math.PI * 2);
+      c.arc(-r * 0.15, -r * 0.08, 2.5, 0, Math.PI * 2);
+      c.fill();
+    } else {
+      // 魚型（イワシ・チョウチンアンコウ・リュウグウノツカイ・グソクムシ・ダイオウイカ）
+      const lenMul = spec.id === 'oarfish' ? 1.45 : 1.05;
+      // 尾ビレ
+      c.fillStyle = spec.glow;
+      c.beginPath();
+      c.moveTo(-r * 0.75 * lenMul, 0);
+      c.lineTo(-r * 1.25 * lenMul, -r * 0.55);
+      c.lineTo(-r * 1.25 * lenMul, r * 0.55);
+      c.closePath();
+      c.fill();
+
+      // 胴体
+      c.fillStyle = spec.color;
+      c.beginPath();
+      c.ellipse(0, 0, r * 0.88 * lenMul, r * (spec.id === 'oarfish' ? 0.38 : 0.58), 0, 0, Math.PI * 2);
+      c.fill();
+      c.lineWidth = 1.5;
+      c.strokeStyle = spec.glow;
+      c.stroke();
+
+      // チョウチンアンコウの提灯（誘引突起）
+      if (spec.id === 'angler') {
+        c.strokeStyle = '#fde047';
+        c.lineWidth = 1.8;
+        c.beginPath();
+        c.moveTo(r * 0.3, -r * 0.45);
+        c.quadraticCurveTo(r * 0.9, -r * 0.95, r * 1.05, -r * 0.35);
+        c.stroke();
+        c.fillStyle = '#fde047';
+        c.beginPath();
+        c.arc(r * 1.05, -r * 0.35, 4.2, 0, Math.PI * 2);
+        c.fill();
+      }
+
+      // 目
+      c.fillStyle = '#ffffff';
+      c.beginPath();
+      c.arc(r * 0.45 * lenMul, -r * 0.14, 3.5, 0, Math.PI * 2);
+      c.fill();
+      c.fillStyle = '#090d16';
+      c.beginPath();
+      c.arc(r * 0.5 * lenMul, -r * 0.14, 1.8, 0, Math.PI * 2);
+      c.fill();
+    }
+
+    if (isHooked) {
+      c.strokeStyle = '#fde047';
+      c.lineWidth = 1.2;
+      c.beginPath();
+      c.arc(0, 0, r * 0.95, 0, Math.PI * 2);
+      c.stroke();
+    }
+
+    c.restore();
+  }
+
+  function drawMineEntity(c, x, y, r, time) {
+    c.save();
+    c.translate(x, y);
+    c.rotate(time * 0.8);
+
+    // 警告グロー
+    const pulse = 0.5 + 0.5 * Math.sin(time * 7);
+    c.fillStyle = `rgba(239, 68, 68, ${0.15 + pulse * 0.2})`;
+    c.beginPath();
+    c.arc(0, 0, r * 1.5, 0, Math.PI * 2);
+    c.fill();
+
+    // トゲ
+    c.strokeStyle = '#94a3b8';
+    c.lineWidth = 2.4;
+    for (let i = 0; i < 8; i++) {
+      const a = (Math.PI * 2 * i) / 8;
+      c.beginPath();
+      c.moveTo(0, 0);
+      c.lineTo(Math.cos(a) * (r + 5), Math.sin(a) * (r + 5));
+      c.stroke();
+    }
+
+    // 機雷本体
+    c.fillStyle = '#1e293b';
+    c.beginPath();
+    c.arc(0, 0, r, 0, Math.PI * 2);
+    c.fill();
+    c.lineWidth = 1.8;
+    c.strokeStyle = '#ef4444';
+    c.stroke();
+
+    // 赤色コアランプ
+    c.fillStyle = pulse > 0.5 ? '#ef4444' : '#fca5a5';
+    c.beginPath();
+    c.arc(0, 0, r * 0.38, 0, Math.PI * 2);
+    c.fill();
+
+    c.restore();
+  }
+
+  /* ================= メイン描画処理 ================= */
+  function renderGame() {
+    if (G.headless) return;
+    const c = ctx;
+    c.save();
+    c.scale(dpr, dpr);
+
+    // 画面シェイク
+    if (G.shakeTimer > 0) {
+      const mag = G.shakeTimer * 14;
+      c.translate((Math.random() - 0.5) * mag, (Math.random() - 0.5) * mag);
+    }
+
+    // 水深に応じた背景グラデーション
+    const depthRatio = Math.min(1, G.depth / 1000);
+    const bgGrad = c.createLinearGradient(0, 0, 0, LH);
+    if (G.phase === 'sky') {
+      bgGrad.addColorStop(0, '#09152b');
+      bgGrad.addColorStop(0.55, '#0e294b');
+      bgGrad.addColorStop(1, '#041424');
+    } else if (depthRatio < 0.25) {
+      bgGrad.addColorStop(0, '#083a5e');
+      bgGrad.addColorStop(0.5, '#05223b');
+      bgGrad.addColorStop(1, '#031324');
+    } else if (depthRatio < 0.65) {
+      bgGrad.addColorStop(0, '#041f38');
+      bgGrad.addColorStop(0.5, '#031122');
+      bgGrad.addColorStop(1, '#020813');
+    } else {
+      bgGrad.addColorStop(0, '#050b1c');
+      bgGrad.addColorStop(0.5, '#0b0720');
+      bgGrad.addColorStop(1, '#190624');
+    }
+    c.fillStyle = bgGrad;
+    c.fillRect(0, 0, LW, LH);
+
+    // 海中の気泡・発光プランクトン描画
+    for (const b of G.bgBubbles) {
+      c.fillStyle = depthRatio > 0.5
+        ? `rgba(45, 212, 191, ${b.alpha})`
+        : `rgba(186, 230, 253, ${b.alpha})`;
+      c.beginPath();
+      c.arc(b.x, b.y, b.r, 0, Math.PI * 2);
+      c.fill();
+    }
+
+    // ===== フェーズ別メインビュー描画 =====
+    if (G.phase === 'dive' || G.phase === 'reel') {
+      const lureScreenY = G.phase === 'dive' ? LURE_SCREEN_Y_DIVE : LURE_SCREEN_Y_REEL;
+
+      // 水面と釣り船（浅い水深のとき画面上部に表示）
+      const surfaceY = lureScreenY - G.depth * PIXELS_PER_METER;
+      if (surfaceY > VIEW_TOP - 60) {
+        c.fillStyle = 'rgba(56, 189, 248, 0.22)';
+        c.fillRect(0, VIEW_TOP, LW, Math.max(0, surfaceY - VIEW_TOP));
+        // 調査船 ABYSS HUNTER号
+        c.fillStyle = '#e2e8f0';
+        c.beginPath();
+        c.moveTo(155, surfaceY - 16);
+        c.lineTo(235, surfaceY - 16);
+        c.lineTo(222, surfaceY + 4);
+        c.lineTo(168, surfaceY + 4);
+        c.closePath();
+        c.fill();
+        c.fillStyle = '#2dd4bf';
+        c.fillRect(182, surfaceY - 28, 26, 12);
+      }
+
+      // 水深グリッドライン（50mごと）
+      c.strokeStyle = 'rgba(148, 163, 184, 0.1)';
+      c.lineWidth = 1;
+      c.font = '800 10px "M PLUS Rounded 1c", sans-serif';
+      c.fillStyle = 'rgba(148, 163, 184, 0.35)';
+      c.textAlign = 'left';
+      const startGridD = Math.floor(Math.max(0, G.depth - 60) / 50) * 50;
+      for (let d = startGridD; d <= G.depth + 70; d += 50) {
+        if (d <= 0) continue;
+        const gy = lureScreenY + (d - G.depth) * PIXELS_PER_METER;
+        if (gy >= VIEW_TOP && gy <= VIEW_BOTTOM) {
+          c.beginPath();
+          c.moveTo(PLAY_LEFT, gy);
+          c.lineTo(PLAY_RIGHT, gy);
+          c.stroke();
+          c.fillText(`${d}m`, PLAY_LEFT + 4, gy - 3);
+        }
+      }
+
+      // 最深部ライン表示
+      const limitY = lureScreenY + (G.depthLimit - G.depth) * PIXELS_PER_METER;
+      if (limitY >= VIEW_TOP && limitY <= VIEW_BOTTOM) {
+        c.strokeStyle = '#fde047';
+        c.lineWidth = 2;
+        c.setLineDash([6, 4]);
+        c.beginPath();
+        c.moveTo(PLAY_LEFT, limitY);
+        c.lineTo(PLAY_RIGHT, limitY);
+        c.stroke();
+        c.setLineDash([]);
+        c.fillStyle = '#fde047';
+        c.textAlign = 'center';
+        c.font = '900 11px "M PLUS Rounded 1c", sans-serif';
+        c.fillText(`▼ 目標最深部 ${G.depthLimit}m （折り返し地点） ▼`, 195, limitY + 14);
+      }
+
+      // 水流ブーストリング描画
+      for (const rg of G.rings) {
+        if (rg.used) continue;
+        const ry = lureScreenY + (rg.depth - G.depth) * PIXELS_PER_METER;
+        if (ry < VIEW_TOP - 30 || ry > VIEW_BOTTOM + 30) continue;
+        c.save();
+        c.translate(rg.x, ry);
+        c.strokeStyle = '#38bdf8';
+        c.lineWidth = 3.5;
+        c.beginPath();
+        c.ellipse(0, 0, rg.r, rg.r * 0.48, 0, 0, Math.PI * 2);
+        c.stroke();
+        c.fillStyle = 'rgba(56, 189, 248, 0.22)';
+        c.fill();
+        c.font = '900 9px "M PLUS Rounded 1c", sans-serif';
+        c.fillStyle = '#bae6fd';
+        c.textAlign = 'center';
+        c.fillText('🌊BOOST', 0, -rg.r * 0.6);
+        c.restore();
+      }
+
+      // 深海機雷描画
+      for (const m of G.mines) {
+        if (!m.alive) continue;
+        const my = lureScreenY + (m.depth - G.depth) * PIXELS_PER_METER;
+        if (my < VIEW_TOP - 30 || my > VIEW_BOTTOM + 30) continue;
+        drawMineEntity(c, m.x, my, m.r, G.time);
+      }
+
+      // 海中の深海魚・宝箱描画
+      for (const f of G.fishes) {
+        if (f.caught) continue;
+        const fy = lureScreenY + (f.depth - G.depth) * PIXELS_PER_METER;
+        if (fy < VIEW_TOP - 50 || fy > VIEW_BOTTOM + 50) continue;
+        drawFishEntity(c, f.x, fy, f.r, f.spec, f.vx >= 0 ? 1 : -1, G.time, false);
+      }
+
+      // 釣り糸（水面からルアーへ繋がる発光レーザーライン）
+      c.strokeStyle = G.boostTimer > 0 ? '#fde047' : '#2dd4bf';
+      c.lineWidth = G.boostTimer > 0 ? 2.8 : 1.8;
+      c.beginPath();
+      c.moveTo(195, VIEW_TOP);
+      c.lineTo(G.lureX, lureScreenY);
+      c.stroke();
+
+      // REEL UP 中にフックにかかっている魚群をルアーの下に連ねて描画
+      for (let i = 0; i < G.hooked.length; i++) {
+        const hf = G.hooked[i];
+        const row = Math.floor(i / 3);
+        const col = (i % 3) - 1;
+        const hx = G.lureX + col * 18 + Math.sin(G.time * 8 + i) * 4;
+        const hy = lureScreenY + 24 + row * 16;
+        drawFishEntity(c, hx, hy, Math.min(18, hf.r * 0.78), hf.spec, 1, G.time, true);
+      }
+
+      // ルアー本体＆シールド・スキルエフェクト
+      if (G.magnetTimer > 0) {
+        c.strokeStyle = 'rgba(232, 121, 249, 0.45)';
+        c.lineWidth = 2;
+        c.beginPath();
+        c.arc(G.lureX, lureScreenY, 68 + Math.sin(G.time * 10) * 8, 0, Math.PI * 2);
+        c.stroke();
+      }
+      if (G.pulseVisualTimer > 0) {
+        const pr = (0.65 - G.pulseVisualTimer) * 260;
+        c.strokeStyle = '#fde047';
+        c.lineWidth = 3.5;
+        c.beginPath();
+        c.arc(G.lureX, lureScreenY, pr, 0, Math.PI * 2);
+        c.stroke();
+      }
+      if (G.shield > 0) {
+        c.strokeStyle = '#2dd4bf';
+        c.lineWidth = 2.2;
+        c.beginPath();
+        c.arc(G.lureX, lureScreenY, 21 + Math.sin(G.time * 6) * 2, 0, Math.PI * 2);
+        c.stroke();
+      }
+
+      // 発光ルアー＆フック描画
+      c.fillStyle = G.boostTimer > 0 ? '#fde047' : '#2dd4bf';
+      c.beginPath();
+      c.arc(G.lureX, lureScreenY, 10, 0, Math.PI * 2);
+      c.fill();
+      c.strokeStyle = '#ffffff';
+      c.lineWidth = 2;
+      c.stroke();
+
+      // 右端の水深ミニマップメーター
+      const meterX = 382;
+      const meterTop = 122;
+      const meterH = 540;
+      roundRectPath(c, meterX - 5, meterTop, 10, meterH, 5);
+      c.fillStyle = 'rgba(15, 23, 42, 0.8)';
+      c.fill();
+      c.strokeStyle = 'rgba(255,255,255,0.2)';
+      c.lineWidth = 1;
+      c.stroke();
+
+      const prog = Math.min(1, G.depth / Math.max(150, G.depthLimit));
+      const markerY = meterTop + prog * meterH;
+      c.fillStyle = '#fde047';
+      c.beginPath();
+      c.arc(meterX, markerY, 6, 0, Math.PI * 2);
+      c.fill();
+    }
+    // ===== Phase 3: SKY BURST（水面ジャンプ＆空中乱射フィーバー） =====
+    else if (G.phase === 'sky') {
+      // 海面と調査船の砲塔
+      c.fillStyle = '#03182e';
+      c.fillRect(0, 565, LW, VIEW_BOTTOM - 565);
+      c.strokeStyle = '#38bdf8';
+      c.lineWidth = 3;
+      c.beginPath();
+      c.moveTo(0, 565);
+      c.lineTo(LW, 565);
+      c.stroke();
+
+      // プラズマ砲搭載船
+      roundRectPath(c, 145, 546, 104, 28, 8);
+      c.fillStyle = '#e2e8f0';
+      c.fill();
+      c.fillStyle = '#2dd4bf';
+      c.beginPath();
+      c.arc(195, 546, 16, Math.PI, 0);
+      c.fill();
+
+      // 空中の獲物描画（ロックオン照準付き）
+      for (const t of G.skyTargets) {
+        if (t.blasted) continue;
+        drawFishEntity(c, t.x, t.y, t.r, t.spec, t.vx >= 0 ? 1 : -1, G.time, false);
+
+        // ロックオンマーカー
+        c.strokeStyle = t.spec.isBoss ? '#f43f5e' : 'rgba(45, 212, 191, 0.85)';
+        c.lineWidth = t.spec.isBoss ? 2.5 : 1.5;
+        c.beginPath();
+        c.arc(t.x, t.y, t.r + 6, 0, Math.PI * 2);
+        c.stroke();
+
+        if (t.maxHp > 1) {
+          const bw = 54;
+          c.fillStyle = 'rgba(0,0,0,0.7)';
+          c.fillRect(t.x - bw * 0.5, t.y - t.r - 14, bw, 7);
+          c.fillStyle = '#f43f5e';
+          c.fillRect(t.x - bw * 0.5, t.y - t.r - 14, bw * (t.hp / t.maxHp), 7);
+        }
+      }
+
+      // プラズマレーザービーム描画
+      for (const l of G.lasers) {
+        const alpha = Math.max(0, l.life / l.maxLife);
+        c.strokeStyle = l.color;
+        c.lineWidth = 4.5 * alpha;
+        c.beginPath();
+        c.moveTo(l.x0, l.y0);
+        c.lineTo(l.x1, l.y1);
+        c.stroke();
+
+        c.strokeStyle = '#ffffff';
+        c.lineWidth = 1.8 * alpha;
+        c.beginPath();
+        c.moveTo(l.x0, l.y0);
+        c.lineTo(l.x1, l.y1);
+        c.stroke();
+      }
+
+      // 残り時間＆タップ連打ガイド
+      const remRatio = Math.max(0, G.skyTimer / Math.max(0.1, G.skyDuration));
+      roundRectPath(c, 50, 512, 300, 14, 7);
+      c.fillStyle = 'rgba(15, 23, 42, 0.85)';
+      c.fill();
+      roundRectPath(c, 50, 512, 300 * remRatio, 14, 7);
+      c.fillStyle = '#f43f5e';
+      c.fill();
+
+      c.textAlign = 'center';
+      c.font = '900 15px "M PLUS Rounded 1c", sans-serif';
+      c.fillStyle = '#fde047';
+      const remTargets = G.skyTargets.filter((t) => !t.blasted).length;
+      c.fillText(
+        remTargets > 0 ? `👆 画面タップ連打で撃ち抜け！ (残り ${remTargets} 体)` : '🎯 PERFECT HUNT!! 全個体撃破！',
+        200,
+        503
+      );
+    }
+    // ===== Phase 4: SHOP（キャスト間の装備アップグレード画面） =====
+    else if (G.phase === 'shop') {
+      roundRectPath(c, 18, 118, 364, 550, 20);
+      c.fillStyle = 'rgba(10, 20, 36, 0.96)';
+      c.fill();
+      c.lineWidth = 2;
+      c.strokeStyle = '#2dd4bf';
+      c.stroke();
+
+      c.textAlign = 'center';
+      c.font = '900 18px "M PLUS Rounded 1c", sans-serif';
+      c.fillStyle = '#ffffff';
+      c.fillText(`🛠️ 潜航装備ドック（CAST ${G.cast}/${G.maxCasts} 完了）`, 200, 152);
+
+      c.font = '900 15px "M PLUS Rounded 1c", sans-serif';
+      c.fillStyle = '#fde047';
+      c.fillText(`所持 GOLD: 💰 ${G.gold.toLocaleString()} G`, 200, 178);
+
+      const shopItems = [
+        {
+          key: 'depth',
+          title: '📏 水深上限強化 (MAX DEPTH)',
+          lv: G.depthLv,
+          cur: `${DEPTH_LEVELS[G.depthLv]}m`,
+          next: G.depthLv < 5 ? `${DEPTH_LEVELS[G.depthLv + 1]}m` : 'MAX (1000m)',
+          cost: DEPTH_COSTS[G.depthLv],
+          desc: 'より深いレア魚層・1000m深海主へ到達可能に！',
+          y: 196,
+          color: '#38bdf8'
+        },
+        {
+          key: 'hook',
+          title: '🪝 フック容量強化 (HOOK CAP)',
+          lv: G.hookLv,
+          cur: `${HOOK_LEVELS[G.hookLv]}匹`,
+          next: G.hookLv < 5 ? `${HOOK_LEVELS[G.hookLv + 1]}匹` : 'MAX (24匹)',
+          cost: HOOK_COSTS[G.hookLv],
+          desc: '帰りの巻上で一網打尽にできる最大数を増加！',
+          y: 298,
+          color: '#4ade80'
+        },
+        {
+          key: 'shield',
+          title: '⚡ 電撃シールド＆プラズマ砲',
+          lv: G.shieldLv,
+          cur: `🛡️${SHIELD_LEVELS[G.shieldLv]}回 / 砲${G.shieldLv + 2}連`,
+          next: G.shieldLv < 5 ? `🛡️${SHIELD_LEVELS[G.shieldLv + 1]}回 / 砲${G.shieldLv + 3}連` : 'MAX',
+          cost: SHIELD_COSTS[G.shieldLv],
+          desc: '機雷を無効化し、空中乱射の同時レーザー数UP！',
+          y: 400,
+          color: '#f472b6'
+        }
+      ];
+
+      for (const it of shopItems) {
+        const canBuy = it.lv < 5 && G.gold >= it.cost;
+        roundRectPath(c, 32, it.y, 336, 90, 14);
+        c.fillStyle = canBuy ? 'rgba(20, 40, 68, 0.95)' : 'rgba(15, 23, 42, 0.7)';
+        c.fill();
+        c.lineWidth = canBuy ? 2 : 1.2;
+        c.strokeStyle = canBuy ? it.color : 'rgba(148, 163, 184, 0.25)';
+        c.stroke();
+
+        c.textAlign = 'left';
+        c.font = '900 13.5px "M PLUS Rounded 1c", sans-serif';
+        c.fillStyle = '#ffffff';
+        c.fillText(`${it.title}  [Lv.${it.lv}/5]`, 46, it.y + 24);
+
+        c.font = '800 12px "Zen Kaku Gothic New", sans-serif';
+        c.fillStyle = '#fde047';
+        c.fillText(`${it.cur}  ➔  ${it.next}`, 46, it.y + 46);
+
+        c.font = '700 10.5px "Zen Kaku Gothic New", sans-serif';
+        c.fillStyle = '#94a3b8';
+        c.fillText(it.desc, 46, it.y + 68);
+
+        // 購入ボタンバッジ
+        roundRectPath(c, 266, it.y + 22, 90, 44, 10);
+        c.fillStyle = it.lv >= 5 ? '#334155' : (canBuy ? it.color : '#1e293b');
+        c.fill();
+        c.textAlign = 'center';
+        c.font = '900 12px "M PLUS Rounded 1c", sans-serif';
+        c.fillStyle = it.lv >= 5 ? '#94a3b8' : (canBuy ? '#041424' : '#64748b');
+        c.fillText(it.lv >= 5 ? 'MAX' : `${it.cost} G`, 311, it.y + 42);
+        c.font = '800 9.5px "M PLUS Rounded 1c", sans-serif';
+        c.fillText(it.lv >= 5 ? '強化完了' : (canBuy ? 'タップ強化' : 'GOLD不足'), 311, it.y + 57);
+      }
+
+      // 次のキャストへ出撃ボタン
+      roundRectPath(c, 36, 512, 328, 58, 16);
+      const nextGrad = c.createLinearGradient(36, 512, 364, 570);
+      nextGrad.addColorStop(0, '#0d9488');
+      nextGrad.addColorStop(0.5, '#2dd4bf');
+      nextGrad.addColorStop(1, '#fbbf24');
+      c.fillStyle = nextGrad;
+      c.fill();
+      c.textAlign = 'center';
+      c.font = '900 17px "M PLUS Rounded 1c", sans-serif';
+      c.fillStyle = '#041424';
+      const nextLabel = G.cast < G.maxCasts
+        ? `⚓ CAST ${G.cast + 1}/${G.maxCasts} へダイブ出撃！`
+        : '🏆 最終釣果リザルトへ進む！';
+      c.fillText(nextLabel, 200, 547);
+
+      c.font = '700 11px "Zen Kaku Gothic New", sans-serif';
+      c.fillStyle = '#94a3b8';
+      c.fillText('※水深1000mを解放すると最深部に「深海主リヴァイアサン」が出現！', 200, 596);
+    }
+
+    // パーティクル＆ポップアップ描画
+    for (const p of G.particles) {
+      c.globalAlpha = Math.max(0, p.life / p.maxLife);
+      c.fillStyle = p.color;
+      c.beginPath();
+      c.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+      c.fill();
+    }
+    c.globalAlpha = 1;
+
+    for (const pop of G.popups) {
+      const a = Math.min(1, pop.life / (pop.maxLife * 0.4));
+      c.save();
+      c.globalAlpha = a;
+      c.translate(pop.x, pop.y);
+      c.scale(pop.scale, pop.scale);
+      c.textAlign = 'center';
+      c.font = '900 13.5px "M PLUS Rounded 1c", sans-serif';
+      c.strokeStyle = 'rgba(0,0,0,0.85)';
+      c.lineWidth = 3.5;
+      c.strokeText(pop.text, 0, 0);
+      c.fillStyle = pop.color;
+      c.fillText(pop.text, 0, 0);
+      if (pop.subText) {
+        c.font = '800 10.5px "Zen Kaku Gothic New", sans-serif';
+        c.strokeText(pop.subText, 0, 14);
+        c.fillStyle = '#ffffff';
+        c.fillText(pop.subText, 0, 14);
+      }
+      c.restore();
+    }
+
+    // 中央フェーズ演出バナー
+    if (G.bannerTimer > 0) {
+      const a = Math.min(1, G.bannerTimer * 2.5);
+      c.save();
+      c.globalAlpha = a;
+      roundRectPath(c, 28, 305, 344, 62, 16);
+      c.fillStyle = 'rgba(4, 14, 28, 0.92)';
+      c.fill();
+      c.strokeStyle = G.bannerColor;
+      c.lineWidth = 2;
+      c.stroke();
+      c.textAlign = 'center';
+      c.font = '900 17px "M PLUS Rounded 1c", sans-serif';
+      c.fillStyle = G.bannerColor;
+      c.fillText(G.bannerText, 200, 333);
+      if (G.bannerSub) {
+        c.font = '800 11.5px "Zen Kaku Gothic New", sans-serif';
+        c.fillStyle = '#f8fafc';
+        c.fillText(G.bannerSub, 200, 353);
+      }
+      c.restore();
+    }
+
+    // フラッシュ演出
+    if (G.flashTimer > 0) {
+      c.fillStyle = G.flashColor;
+      c.globalAlpha = Math.min(0.45, G.flashTimer * 0.6);
+      c.fillRect(0, 0, LW, LH);
+      c.globalAlpha = 1;
+    }
+
+    // ===== 上部 HUD & 下部スキルバー描画 =====
+    drawHudAndSkills(c);
+
+    c.restore();
+  }
+
+  function drawHudAndSkills(c) {
+    // 上部バー背景
+    roundRectPath(c, 8, 8, 384, 96, 16);
+    c.fillStyle = 'rgba(7, 16, 30, 0.9)';
+    c.fill();
+    c.lineWidth = 1.5;
+    c.strokeStyle = 'rgba(45, 212, 191, 0.32)';
+    c.stroke();
+
+    // 左上アイコンボタン群 (一時停止・音・ランキング)
+    const topBtns = [
+      { x: 14, w: 36, icon: '⏸' },
+      { x: 54, w: 34, icon: Snd.on ? '🔊' : '🔇' },
+      { x: 92, w: 34, icon: '🏆' }
+    ];
+    for (const b of topBtns) {
+      roundRectPath(c, b.x, 14, b.w, 34, 10);
+      c.fillStyle = 'rgba(30, 41, 59, 0.9)';
+      c.fill();
+      c.strokeStyle = 'rgba(255,255,255,0.18)';
+      c.lineWidth = 1;
+      c.stroke();
+      c.textAlign = 'center';
+      c.font = '15px sans-serif';
+      c.fillStyle = '#fff';
+      c.fillText(b.icon, b.x + b.w * 0.5, 36);
+    }
+
+    // キャスト番号＆フェーズバッジ
+    roundRectPath(c, 132, 14, 106, 34, 10);
+    c.fillStyle = 'rgba(13, 148, 136, 0.25)';
+    c.fill();
+    c.textAlign = 'center';
+    c.font = '900 11px "M PLUS Rounded 1c", sans-serif';
+    c.fillStyle = '#2dd4bf';
+    c.fillText(`CAST ${G.cast} / ${G.maxCasts}`, 185, 28);
+    const phaseLabel = G.phase === 'dive' ? '▼ DIVE 潜航' : (G.phase === 'reel' ? '▲ REEL 巻上' : (G.phase === 'sky' ? '⚡ SKY 乱射' : '🛠️ SHOP 強化'));
+    c.fillStyle = '#fde047';
+    c.fillText(phaseLabel, 185, 42);
+
+    // スコア＆所持GOLD
+    c.textAlign = 'right';
+    c.font = '800 10px "M PLUS Rounded 1c", sans-serif';
+    c.fillStyle = '#94a3b8';
+    c.fillText(`💰 ${G.gold.toLocaleString()} G`, 382, 26);
+    c.font = '900 15px "M PLUS Rounded 1c", sans-serif';
+    c.fillStyle = '#fde047';
+    c.fillText(`${G.score.toLocaleString()} pts`, 382, 44);
+
+    // 2段目ステータス：現在水深・フック数・電撃シールド
+    c.textAlign = 'left';
+    c.font = '900 13px "M PLUS Rounded 1c", sans-serif';
+    c.fillStyle = '#38bdf8';
+    c.fillText(`🌊 水深 ${Math.floor(G.depth)}m / ${G.depthLimit}m`, 18, 70);
+
+    c.textAlign = 'center';
+    c.fillStyle = G.hooked.length >= G.hookCap ? '#fde047' : '#f8fafc';
+    c.fillText(`🪝 釣果 ${G.hooked.length} / ${G.hookCap}匹`, 208, 70);
+
+    c.textAlign = 'right';
+    c.fillStyle = '#2dd4bf';
+    c.fillText(`🛡️ シールド ×${G.shield}`, 382, 70);
+
+    // エネルギーバー (EN 0〜100)
+    roundRectPath(c, 18, 80, 364, 14, 7);
+    c.fillStyle = 'rgba(15, 23, 42, 0.9)';
+    c.fill();
+    const enW = Math.max(0, Math.min(1, G.energy / G.maxEnergy)) * 364;
+    if (enW > 2) {
+      roundRectPath(c, 18, 80, enW, 14, 7);
+      const enGrad = c.createLinearGradient(18, 80, 382, 80);
+      enGrad.addColorStop(0, '#0ea5e9');
+      enGrad.addColorStop(1, '#2dd4bf');
+      c.fillStyle = enGrad;
+      c.fill();
+    }
+    c.textAlign = 'center';
+    c.font = '900 9.5px "M PLUS Rounded 1c", sans-serif';
+    c.fillStyle = '#ffffff';
+    c.fillText(`⚡ ABYSS ENERGY ${Math.floor(G.energy)} / 100`, 200, 90);
+
+    // 下部3つの親指スキルボタン
+    const skills = [
+      {
+        key: 'boost',
+        title: G.phase === 'shop' ? '📏 水深強化' : '🌊 水流加速',
+        sub: G.phase === 'shop' ? `Lv.${G.depthLv}→${Math.min(5, G.depthLv + 1)}` : '高速無敵ストリーム',
+        cost: G.phase === 'shop' ? `${DEPTH_COSTS[G.depthLv]}G` : 'EN 30',
+        x: 16,
+        w: 116,
+        color: '#38bdf8',
+        active: G.boostTimer > 0,
+        ready: G.phase === 'shop' ? (G.depthLv < 5 && G.gold >= DEPTH_COSTS[G.depthLv]) : (G.energy >= 30 && G.boostTimer <= 0.2)
+      },
+      {
+        key: 'pulse',
+        title: G.phase === 'shop' ? '🪝 フック強化' : '⚡ 電撃パルス',
+        sub: G.phase === 'shop' ? `Lv.${G.hookLv}→${Math.min(5, G.hookLv + 1)}` : '機雷爆破＆シールド',
+        cost: G.phase === 'shop' ? `${HOOK_COSTS[G.hookLv]}G` : 'EN 40',
+        x: 142,
+        w: 116,
+        color: '#fde047',
+        active: G.pulseVisualTimer > 0,
+        ready: G.phase === 'shop' ? (G.hookLv < 5 && G.gold >= HOOK_COSTS[G.hookLv]) : (G.energy >= 40 && G.pulseVisualTimer <= 0.1)
+      },
+      {
+        key: 'magnet',
+        title: G.phase === 'shop' ? '⚡ シールド強化' : '🧲 深海磁場',
+        sub: G.phase === 'shop' ? `Lv.${G.shieldLv}→${Math.min(5, G.shieldLv + 1)}` : 'レア魚吸引＆斉射',
+        cost: G.phase === 'shop' ? `${SHIELD_COSTS[G.shieldLv]}G` : 'EN 50',
+        x: 268,
+        w: 116,
+        color: '#e879f9',
+        active: G.magnetTimer > 0,
+        ready: G.phase === 'shop' ? (G.shieldLv < 5 && G.gold >= SHIELD_COSTS[G.shieldLv]) : (G.energy >= 50 && G.magnetTimer <= 0.2)
+      }
+    ];
+
+    for (const sk of skills) {
+      const by = 690;
+      const bh = 74;
+      roundRectPath(c, sk.x, by, sk.w, bh, 14);
+      c.fillStyle = sk.active
+        ? 'rgba(45, 212, 191, 0.32)'
+        : (sk.ready ? 'rgba(15, 32, 56, 0.96)' : 'rgba(10, 18, 32, 0.65)');
+      c.fill();
+      c.lineWidth = sk.ready || sk.active ? 2.2 : 1.2;
+      c.strokeStyle = sk.active ? '#fde047' : (sk.ready ? sk.color : 'rgba(148, 163, 184, 0.22)');
+      c.stroke();
+
+      c.textAlign = 'center';
+      c.font = '900 13.5px "M PLUS Rounded 1c", sans-serif';
+      c.fillStyle = sk.ready || sk.active ? '#ffffff' : '#64748b';
+      c.fillText(sk.title, sk.x + sk.w * 0.5, by + 23);
+
+      c.font = '800 9.5px "Zen Kaku Gothic New", sans-serif';
+      c.fillStyle = sk.ready || sk.active ? '#cbd5e1' : '#475569';
+      c.fillText(sk.sub, sk.x + sk.w * 0.5, by + 41);
+
+      roundRectPath(c, sk.x + 20, by + 50, sk.w - 40, 16, 8);
+      c.fillStyle = sk.ready ? sk.color : 'rgba(30, 41, 59, 0.8)';
+      c.fill();
+      c.font = '900 9.5px "M PLUS Rounded 1c", sans-serif';
+      c.fillStyle = sk.ready ? '#041424' : '#64748b';
+      c.fillText(sk.active ? '発動中!' : sk.cost, sk.x + sk.w * 0.5, by + 61);
+    }
+  }
+
+  /* ================= 画面遷移＆ライフサイクル管理 ================= */
+  function syncOverlays() {
+    $('title-overlay').classList.toggle('hidden', G.mode !== 'title');
+    $('pause-modal').classList.toggle('hidden', G.mode !== 'paused');
+    $('result-modal').classList.toggle('hidden', G.mode !== 'gameover');
+  }
+
+  function startNewGame(seed) {
+    Snd.unlock();
+    G = createGameState(seed !== undefined ? seed : (Date.now() ^ Math.floor(Math.random() * 0x7fffffff)));
+    G.mode = 'playing';
+    startCast(G);
+    syncOverlays();
+    Snd.startBgm();
+    renderGame();
+  }
+
+  function pauseGame() {
+    if (G.mode !== 'playing') return;
+    G.mode = 'paused';
+    G.isDragging = false;
+    Snd.stopBgm();
+    syncOverlays();
+  }
+
+  function resumeGame() {
+    if (G.mode !== 'paused') return;
+    G.mode = 'playing';
+    syncOverlays();
+    Snd.startBgm();
+  }
+
+  function backToTitle() {
+    Snd.stopBgm();
+    G = createGameState(Date.now());
+    G.mode = 'title';
+    seedTitleDemo(G);
+    syncOverlays();
+    updateUI();
+    renderGame();
+  }
+
+  function onGameOver(st = G) {
+    if (st.mode === 'gameover') return;
+    st.mode = 'gameover';
+    st.isDragging = false;
+    if (st.headless) return;
+
+    Snd.stopBgm();
+    Snd.perfectFanfare();
+
+    const prevBest = localRec.best_score || 0;
+    const isNewRecord = st.score > prevBest && st.score > 0;
+
+    $('res-score').textContent = st.score.toLocaleString() + ' pts';
+    $('res-depth').textContent = st.maxDepthReached.toLocaleString() + ' m';
+    $('res-catch').textContent = st.totalCaught.toLocaleString() + ' 匹';
+    $('res-boss').textContent = st.bossCaught.toLocaleString() + ' 体';
+    $('res-new-record').classList.toggle('hidden', !isNewRecord);
+
+    if (st.bossCaught > 0) {
+      $('res-badge').textContent = '👑 LEVIATHAN SLAIN!!';
+      $('res-title').textContent = '🎉 深海主アビス・リヴァイアサン討伐！';
+      $('res-summary-line').textContent = `最深 1000m 制覇！1キャスト最大釣果 ${st.bestCastCatch}匹`;
+    } else {
+      $('res-badge').textContent = 'HUNTING COMPLETE';
+      $('res-title').textContent = '深海釣行完了！';
+      $('res-summary-line').textContent = `最大到達水深：${st.maxDepthReached}m （1キャスト最大 ${st.bestCastCatch}匹）`;
+    }
+
+    syncOverlays();
+    submitCloudRecord(st.score, st.maxDepthReached, st.totalCaught, st.bossCaught);
+  }
+
+  /* ================= ポインター入力（ドラッグ操作・空中乱射・ショップ購入） ================= */
+  function clientToLogical(clientX, clientY) {
+    const rect = canvas.getBoundingClientRect();
+    if (!rect.width || !rect.height) return { x: 200, y: 390 };
+    const x = ((clientX - rect.left) / rect.width) * LW;
+    const y = ((clientY - rect.top) / rect.height) * LH;
+    return {
+      x: Number.isFinite(x) ? x : 200,
+      y: Number.isFinite(y) ? y : 390
+    };
+  }
+
+  canvas.addEventListener('pointerdown', (e) => {
+    if (G.mode !== 'playing') return;
+    Snd.unlock();
+    const pt = clientToLogical(e.clientX, e.clientY);
+
+    // 上部HUDボタン判定
+    if (pt.y < 54) {
+      if (pt.x < 52) { pauseGame(); return; }
+      if (pt.x < 90) { Snd.toggle(); return; }
+      if (pt.x < 130) { showRankingModal(); return; }
+    }
+
+    // 下部スキルバー判定
+    if (pt.y > 685) {
+      if (pt.x < 138) { useSkill(G, 'boost'); return; }
+      if (pt.x < 262) { useSkill(G, 'pulse'); return; }
+      useSkill(G, 'magnet');
+      return;
+    }
+
+    // ショップフェーズのカード＆次キャストボタン判定
+    if (G.phase === 'shop') {
+      if (pt.y >= 192 && pt.y <= 290) { buyUpgrade(G, 'depth'); return; }
+      if (pt.y >= 294 && pt.y <= 392) { buyUpgrade(G, 'hook'); return; }
+      if (pt.y >= 396 && pt.y <= 496) { buyUpgrade(G, 'shield'); return; }
+      if (pt.y >= 505 && pt.y <= 585) { proceedNextCast(G); return; }
+      return;
+    }
+
+    // SKY BURST フェーズはタップでプラズマ砲発射
+    if (G.phase === 'sky') {
+      fireSkyLaser(G, pt.x, pt.y);
+      return;
+    }
+
+    // DIVE / REEL フェーズの左右ドラッグ開始（2本指同時タッチ耐性）
+    if (G.isDragging && G.activePointerId !== null && G.activePointerId !== e.pointerId) return;
+    G.isDragging = true;
+    G.activePointerId = e.pointerId;
+    G.targetX = clampX(pt.x);
+  });
+
+  window.addEventListener('pointermove', (e) => {
+    if (G.mode !== 'playing' || !G.isDragging) return;
+    if (G.activePointerId !== null && e.pointerId !== G.activePointerId) return;
+    const pt = clientToLogical(e.clientX, e.clientY);
+    G.targetX = clampX(pt.x);
+  }, { passive: true });
+
+  window.addEventListener('pointerup', (e) => {
+    if (G.activePointerId !== null && e.pointerId !== undefined && e.pointerId !== G.activePointerId) return;
+    G.isDragging = false;
+    G.activePointerId = null;
+  }, { passive: true });
+
+  window.addEventListener('pointercancel', () => {
+    G.isDragging = false;
+    G.activePointerId = null;
+  }, { passive: true });
+
+  /* ================= 単一 requestAnimationFrame ループ保証 ================= */
+  let lastFrameTime = performance.now();
+  function mainLoop(now) {
+    const rawDt = (now - lastFrameTime) / 1000;
+    lastFrameTime = now;
+    stepGame(G, rawDt);
+    renderGame();
+    requestAnimationFrame(mainLoop);
+  }
+
+  /* ================= 自動検証＆3段階ボットAI（window.GAME） ================= */
+  function chooseBotAction(st, profile) {
+    if (st.mode !== 'playing') return;
+
+    // 1. SHOP フェーズでのボット購入判断（プレイヤーの装備確認時間を反映）
+    if (st.phase === 'shop') {
+      if (st.shopTimer < 0.02) {
+        if (profile === 'novice') {
+          const keys = ['hook', 'shield', 'depth'];
+          const k = keys[Math.floor(st.rng() * keys.length)];
+          buyUpgrade(st, k);
+        } else if (profile === 'standard') {
+          // 標準プレイヤー：1回のショップで最大2段階ずつバランス強化
+          let bought = 0;
+          const order = st.rng() < 0.62 ? ['hook', 'shield', 'depth'] : ['depth', 'hook', 'shield'];
+          for (let round = 0; round < 2; round++) {
+            for (const k of order) {
+              if (bought < 2 && buyUpgrade(st, k)) bought++;
+            }
+          }
+        } else {
+          // 熟練プレイヤー：水深上限 → フック容量 → シールドの順で全額最適投資
+          while (
+            buyUpgrade(st, 'depth') ||
+            buyUpgrade(st, 'hook') ||
+            buyUpgrade(st, 'shield')
+          ) {}
+        }
+      }
+      if (st.shopTimer >= 1.8) {
+        proceedNextCast(st);
+      }
+      return;
+    }
+
+    // 2. SKY BURST フェーズでのタップ連射判断
+    if (st.phase === 'sky') {
+      const rate = profile === 'expert' ? 0.38 : (profile === 'standard' ? 0.22 : 0.12);
+      if (st.rng() < rate) {
+        fireSkyLaser(st, 195, 260);
+      }
+      if (profile === 'expert' && st.energy >= 50) {
+        useSkill(st, 'magnet');
+      }
+      return;
+    }
+
+    // 3. DIVE（潜航）フェーズの操舵＆スキル判断
+    if (st.phase === 'dive') {
+      if (profile === 'novice') {
+        st.targetX = 195 + Math.sin(st.time * 1.9 + st.cast) * 115;
+        if (st.energy >= 65 && st.rng() < 0.02) useSkill(st, 'boost');
+        return;
+      }
+
+      let bestX = st.lureX;
+      let bestScore = -1e9;
+      const lookAhead = profile === 'expert' ? 35 : 20;
+      const lanes = profile === 'expert' ? 9 : 5;
+
+      // 前方に機雷が接近している場合は電撃パルスまたは水流加速を発動
+      const dangerMines = st.mines.filter((m) => m.alive && m.depth > st.depth && m.depth - st.depth < 18 && Math.abs(m.x - st.lureX) < 38);
+      if (dangerMines.length > 0) {
+        if (st.energy >= 40 && st.pulseVisualTimer <= 0.1 && st.shield <= 2) {
+          useSkill(st, 'pulse');
+        } else if (st.energy >= 30 && st.boostTimer <= 0.2) {
+          useSkill(st, 'boost');
+        }
+      } else if (st.energy >= (profile === 'expert' ? 54 : 68) && st.boostTimer <= 0.2 && st.depth < st.depthLimit * 0.85) {
+        useSkill(st, 'boost');
+      }
+
+      for (let i = 0; i < lanes; i++) {
+        const cx = PLAY_LEFT + 26 + ((PLAY_RIGHT - PLAY_LEFT - 52) * i) / (lanes - 1);
+        let val = -Math.abs(cx - st.lureX) * 0.16;
+
+        // 水流リングへの接近ボーナス
+        for (const rg of st.rings) {
+          if (rg.used) continue;
+          const dd = rg.depth - st.depth;
+          if (dd > 0 && dd < lookAhead) {
+            const dx = Math.abs(rg.x - cx);
+            if (dx < 48) val += (52 - dx) * 3.8;
+          }
+        }
+
+        // 機雷からの回避ペナルティ
+        for (const m of st.mines) {
+          if (!m.alive) continue;
+          const dd = m.depth - st.depth;
+          if (dd > -2 && dd < lookAhead) {
+            const dx = Math.abs(m.x - cx);
+            if (dx < 40) val -= (44 - dx) * (9.5 / Math.max(2, dd));
+          }
+        }
+
+        // 魚との接触を避けて最深部を目指す
+        const avoidRatio = profile === 'expert' ? 0.94 : 0.72;
+        if (st.depth < st.depthLimit * avoidRatio) {
+          for (const f of st.fishes) {
+            if (f.caught) continue;
+            const dd = f.depth - st.depth;
+            if (dd > -1 && dd < lookAhead * 0.75) {
+              const dx = Math.abs(f.x - cx);
+              if (dx < 32) val -= (34 - dx) * 3.6;
+            }
+          }
+        }
+
+        if (val > bestScore) {
+          bestScore = val;
+          bestX = cx;
+        }
+      }
+      st.targetX = bestX;
+      return;
+    }
+
+    // 4. REEL（巻上）フェーズの操舵＆スキル判断（高単価な深海魚・宝箱・ボスを狙う）
+    if (st.phase === 'reel') {
+      if (profile === 'novice') {
+        st.targetX = 195 + Math.cos(st.time * 2.2) * 110;
+        return;
+      }
+
+      if (st.energy >= 50 && st.magnetTimer <= 0.2 && (st.depth > 160 || profile === 'expert')) {
+        useSkill(st, 'magnet');
+      } else if (st.energy >= 68 && st.pulseVisualTimer <= 0.1 && st.shield < st.maxShield) {
+        useSkill(st, 'pulse');
+      }
+
+      let bestFish = null;
+      let bestVal = -1e9;
+      const lookUp = profile === 'expert' ? 40 : 25;
+
+      for (const f of st.fishes) {
+        if (f.caught) continue;
+        const dd = st.depth - f.depth;
+        if (dd >= -3 && dd <= lookUp) {
+          const val = f.spec.gold * (f.spec.isBoss ? 12 : (profile === 'expert' ? 1.8 : 1.2)) - Math.abs(f.x - st.lureX) * 0.6 - Math.max(0, dd) * 4;
+          if (val > bestVal) {
+            bestVal = val;
+            bestFish = f;
+          }
+        }
+      }
+      if (bestFish) {
+        st.targetX = bestFish.x;
+      }
+    }
+  }
+
+  window.GAME = {
+    step(frames = 1, input = {}) {
+      const n = Math.max(1, Math.min(3600, Math.floor(Number(frames) || 1)));
+      if (input.start && G.mode !== 'playing') startNewGame(input.seed);
+      if (input.pause && G.mode === 'playing') pauseGame();
+      if (input.resume && G.mode === 'paused') resumeGame();
+      if (input.retry) startNewGame(input.seed);
+      if (input.title) backToTitle();
+      if (input.x !== undefined) {
+        G.targetX = clampX(Number(input.x));
+      }
+      if (input.skill) {
+        useSkill(G, String(input.skill));
+      }
+      if (input.buy) {
+        buyUpgrade(G, String(input.buy));
+      }
+      if (input.nextCast) {
+        proceedNextCast(G);
+      }
+      if (input.tap || input.shoot) {
+        fireSkyLaser(G, input.x !== undefined ? Number(input.x) : 195, input.y !== undefined ? Number(input.y) : 260);
+      }
+
+      for (let i = 0; i < n; i++) {
+        if (input.bot && G.mode === 'playing') {
+          chooseBotAction(G, String(input.bot));
+        }
+        stepGame(G, 1 / 60);
+      }
+      renderGame();
+      return this.state();
+    },
+
+    state() {
+      return {
+        mode: G.mode,
+        phase: G.phase,
+        cast: G.cast,
+        maxCasts: G.maxCasts,
+        stage: G.cast,
+        wave: G.depthLv,
+        floor: Math.floor(G.depth),
+        score: G.score,
+        gold: G.gold,
+        totalGoldEarned: G.totalGoldEarned,
+        bestScore: localRec.best_score || 0,
+        depth: Math.floor(G.depth),
+        maxDepthReached: G.maxDepthReached,
+        depthLimit: G.depthLimit,
+        depthLv: G.depthLv,
+        hookLv: G.hookLv,
+        shieldLv: G.shieldLv,
+        hookedCount: G.hooked.length,
+        hookCap: G.hookCap,
+        totalCaught: G.totalCaught,
+        bestCastCatch: G.bestCastCatch,
+        bossCaught: G.bossCaught,
+        hp: G.shield,
+        life: G.shield,
+        energy: Math.round(G.energy * 10) / 10,
+        lureX: Math.round(G.lureX * 10) / 10,
+        entityCount: G.fishes.length + G.mines.length + G.rings.length + G.skyTargets.length,
+        time: Math.round(G.time * 100) / 100,
+        skillsUsed: Object.assign({}, G.skillsUsed),
+        upgradesBought: Object.assign({}, G.upgradesBought),
+        errorCount: errorLog.length,
+        errors: errorLog.slice(-5)
+      };
+    },
+
+    sim(runs = 30, botProfile = 'standard') {
+      const count = Math.max(1, Math.min(200, Math.floor(Number(runs) || 30)));
+      const profile = ['novice', 'standard', 'expert'].includes(botProfile) ? botProfile : 'standard';
+
+      let totalScore = 0, totalTime = 0, totalDepth = 0, totalCaught = 0, totalBoss = 0, totalPerfect = 0;
+      let minTime = 99999, maxScore = 0, minScore = 99999999;
+      let reach1000mRuns = 0, bossSlainRuns = 0;
+      const skillsTotal = { boost: 0, pulse: 0, magnet: 0 };
+      const upgradesTotal = { depth: 0, hook: 0, shield: 0 };
+      const endReasons = { boss_slain_clear: 0, completed_all_casts: 0, time_limit: 0 };
+
+      for (let r = 0; r < count; r++) {
+        const st = createGameState(5000 + r * 7919 + profile.charCodeAt(0) * 193);
+        st.mode = 'playing';
+        st.headless = true;
+        startCast(st);
+
+        const maxFrames = 60 * 300; // 最大5分
+        for (let f = 0; f < maxFrames && st.mode === 'playing'; f++) {
+          chooseBotAction(st, profile);
+          stepGame(st, 1 / 60);
+        }
+
+        if (st.mode !== 'gameover') {
+          endReasons.time_limit++;
+        } else if (st.bossCaught > 0) {
+          endReasons.boss_slain_clear++;
+        } else {
+          endReasons.completed_all_casts++;
+        }
+
+        totalScore += st.score;
+        totalTime += st.time;
+        totalDepth += st.maxDepthReached;
+        totalCaught += st.totalCaught;
+        totalBoss += st.bossCaught;
+        totalPerfect += st.perfectHunts;
+
+        if (st.maxDepthReached >= 950) reach1000mRuns++;
+        if (st.bossCaught > 0) bossSlainRuns++;
+        if (st.time < minTime) minTime = st.time;
+        if (st.score > maxScore) maxScore = st.score;
+        if (st.score < minScore) minScore = st.score;
+
+        skillsTotal.boost += st.skillsUsed.boost;
+        skillsTotal.pulse += st.skillsUsed.pulse;
+        skillsTotal.magnet += st.skillsUsed.magnet;
+        upgradesTotal.depth += st.upgradesBought.depth;
+        upgradesTotal.hook += st.upgradesBought.hook;
+        upgradesTotal.shield += st.upgradesBought.shield;
+      }
+
+      return {
+        profile,
+        runs: count,
+        avgScore: Math.round(totalScore / count),
+        minScore,
+        maxScore,
+        avgSurvivalSec: Math.round((totalTime / count) * 10) / 10,
+        minSurvivalSec: Math.round(minTime * 10) / 10,
+        avgMaxDepth: Math.round(totalDepth / count),
+        reach1000mRate: Math.round((reach1000mRuns / count) * 1000) / 10,
+        bossClearRate: Math.round((bossSlainRuns / count) * 1000) / 10,
+        avgBossCaught: Math.round((totalBoss / count) * 100) / 100,
+        avgTotalCaught: Math.round((totalCaught / count) * 10) / 10,
+        avgPerfectHunts: Math.round((totalPerfect / count) * 100) / 100,
+        skillsTotal,
+        upgradesTotal,
+        endReasons
+      };
+    }
+  };
+
   /* ================= イベント登録・起動 ================= */
   $('me-btn').onclick = () => { if (acct.token) showAccountMenu(); else showAuth('login'); };
   $('rank-btn').onclick = showRankingModal;
+  $('hud-rank-btn').onclick = showRankingModal;
   $('rank-close-btn').onclick = () => $('rank-modal').classList.add('hidden');
-  $('start-btn').onclick = () => {
-    Snd.unlock();
-    Snd.beep(880, 0.1);
-    toast('🛠️ 企画・基盤準備完了！次回セッションでゲーム本編を実装します');
-  };
+
+  $('start-btn').onclick = () => startNewGame();
+  $('pause-btn').onclick = () => pauseGame();
+  $('snd-btn').onclick = () => Snd.toggle();
+
+  $('skill-boost').onclick = () => useSkill(G, 'boost');
+  $('skill-pulse').onclick = () => useSkill(G, 'pulse');
+  $('skill-magnet').onclick = () => useSkill(G, 'magnet');
+
+  $('resume-btn').onclick = () => resumeGame();
+  $('retry-btn').onclick = () => startNewGame();
+  $('pause-rank-btn').onclick = showRankingModal;
+  $('pause-acct-btn').onclick = () => { if (acct.token) showAccountMenu(); else showAuth('login'); };
+  $('title-btn').onclick = () => backToTitle();
+
+  $('result-retry-btn').onclick = () => startNewGame();
+  $('result-rank-btn').onclick = showRankingModal;
+  $('result-title-btn').onclick = () => backToTitle();
 
   document.addEventListener('gesturestart', (e) => e.preventDefault());
   document.addEventListener('dblclick', (e) => e.preventDefault(), { passive: false });
+  window.addEventListener('visibilitychange', () => {
+    if (document.hidden && G.mode === 'playing') pauseGame();
+  });
+
   if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost')) {
     window.addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(() => {}));
   }
 
   async function boot() {
     updateUI();
+    const isDebug = /[?&]debug\b/.test(location.search);
     if (!acct.token) {
-      showAuth('login');
+      if (!isDebug) showAuth('login');
       return;
     }
     try {
@@ -577,6 +3304,9 @@ html, body {
       loadCloudRecords();
     } catch (e) {}
   }
+
+  // メイン描画ループ開始（1回のみ起動）
+  requestAnimationFrame(mainLoop);
 
   if (gateNeeded()) {
     $('gate-modal').classList.remove('hidden');

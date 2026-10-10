@@ -1,4 +1,4 @@
-const CACHE = 'fishing-abyss-hunter-v1';
+const CACHE = 'fishing-abyss-hunter-v2';
 const CORE = [
   './',
   'index.html',
