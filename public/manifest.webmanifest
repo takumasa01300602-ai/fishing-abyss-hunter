@@ -1,0 +1,21 @@
+{
+  "name": "深海フィッシング：アビス・ハンター",
+  "short_name": "アビス釣り",
+  "start_url": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#041424",
+  "theme_color": "#041424",
+  "icons": [
+    {
+      "src": "icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}

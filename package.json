@@ -1,0 +1,15 @@
+{
+  "name": "fishing-abyss-hunter",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "wrangler dev --port 8803",
+    "deploy": "wrangler deploy",
+    "db:local": "wrangler d1 execute farm-farm-happy-db --local --file=./schema.sql",
+    "db:remote": "wrangler d1 execute farm-farm-happy-db --remote --file=./schema.sql",
+    "icons": "node tools/make-icons.mjs"
+  },
+  "devDependencies": {
+    "wrangler": "^4"
+  }
+}

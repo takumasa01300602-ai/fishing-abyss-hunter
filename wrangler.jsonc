@@ -1,0 +1,35 @@
+{
+	"name": "fishing-abyss-hunter",
+	"main": "src/index.js",
+	"compatibility_date": "2026-09-01",
+	// 静的ファイル（ゲーム本体）。/api/ だけ先にWorkerが処理します。
+	"assets": {
+		"directory": "./public",
+		"binding": "ASSETS",
+		"run_worker_first": [
+			"/api/*"
+		]
+	},
+	// 本番のアカウントは taka-games（および全ゲーム）と共通です。
+	// 同じ D1 データベース（farm-farm-happy-db）を参照します。
+	"d1_databases": [
+		{
+			"binding": "DB",
+			"database_name": "farm-farm-happy-db",
+			"database_id": "41c5b012-0e35-45b4-a525-c52fa618dde8"
+		}
+	],
+	"vars": {
+		// ※招待コードはここには書きません（公開されてしまうため）。
+		//   npx.cmd wrangler secret put INVITE_CODE で、他ゲームと同じコードを登録します。
+		// 新規登録の受付。"false" にして再デプロイすると閉じられます
+		"REGISTRATION_OPEN": "true",
+		// 登録できる人数の上限（共通の users テーブルの人数で数えます）
+		"MAX_USERS": "60",
+		// 別ドメインからも使う場合、カンマ区切りで指定
+		"ALLOWED_ORIGINS": ""
+	},
+	"observability": {
+		"enabled": true
+	}
+}
